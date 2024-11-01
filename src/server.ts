@@ -1,5 +1,4 @@
-import express from 'express';
-import { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { Actor, OrderedCollection, Note, Create } from './types';
 import { json } from 'body-parser';
 import { actor, note, createActivity, outboxCollection, emptyCollection } from './staticData';
@@ -12,8 +11,20 @@ const DOMAIN = 'example.com';
 const USERNAME = 'alice';
 const BASE_URL = `https://${DOMAIN}/users/${USERNAME}`;
 
+// Middleware for logging requests
+const logRequests = (req: Request, res: Response, next: NextFunction): void => {
+  console.log(`${req.method} ${req.url}`);
+  res.on('finish', () => {
+    console.log(`Response status: ${res.statusCode}`);
+  });
+  next();
+};
+
+// Apply the logging middleware to the Express app
+app.use(logRequests);
+
 // Middleware for ActivityPub content type headers
-const activityPubHeaders = (_req: express.Request, res: Response, next: express.NextFunction): void => {
+const activityPubHeaders = (_req: express.Request, res: Response, next: NextFunction): void => {
   res.setHeader('Content-Type', 'application/activity+json');
   next();
 };
