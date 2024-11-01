@@ -1,5 +1,3 @@
-import { Actor, OrderedCollection, Note, Create } from 'activitystreams';
-
 export type Actor = {
   "@context": string[];
   type: string;
@@ -10,11 +8,6 @@ export type Actor = {
   followers: string;
   preferredUsername: string;
   name: string;
-  publicKey?: {
-    id: string;
-    owner: string;
-    publicKeyPem: string;
-  };
 }
 
 export type OrderedCollection = {
