@@ -1,89 +1,31 @@
-import { Request, Response } from 'express';
-import { postInbox } from '../inboxService';
-import { getActorFromDB, addFollowerToDB } from '../dbService';
-import fetch from 'node-fetch';
+name: CI2
 
-jest.mock('node-fetch');
-const { Response: FetchResponse } = jest.requireActual('node-fetch');
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-describe('postInbox', () => {
-  let req: Partial<Request>;
-  let res: Partial<Response>;
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-  beforeEach(() => {
-    req = {
-      params: { username: 'alice' },
-      body: {},
-    };
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
-  });
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-  it('should respond with 404 if username is not found in the database', async () => {
-    req.params.username = 'bob';
-    (getActorFromDB as jest.Mock).mockResolvedValue(null);
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
 
-    await postInbox(req as Request, res as Response);
+      - name: Install dependencies
+        run: npm install
 
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({ error: 'User not found' });
-  });
+      - name: Build project
+        run: npm run build
 
-  it('should log the received activity', async () => {
-    const consoleSpy = jest.spyOn(console, 'log');
-    req.body = { type: 'Follow', actor: { id: 'follower1', inbox: 'http://example.com/inbox' } };
-
-    await postInbox(req as Request, res as Response);
-
-    expect(consoleSpy).toHaveBeenCalledWith('Received activity:', req.body);
-    consoleSpy.mockRestore();
-  });
-
-  it('should respond with an Accept activity and update followers collection for Follow activities', async () => {
-    req.body = { type: 'Follow', actor: { id: 'follower1', inbox: 'http://example.com/inbox' } };
-
-    (fetch as jest.Mock).mockResolvedValue(new FetchResponse(null, { status: 200 }));
-    (getActorFromDB as jest.Mock).mockResolvedValue({ id: 'actor1' });
-    (addFollowerToDB as jest.Mock).mockResolvedValue(true);
-
-    await postInbox(req as Request, res as Response);
-
-    expect(fetch).toHaveBeenCalledWith('http://example.com/inbox', expect.objectContaining({
-      method: 'POST',
-      headers: { 'Content-Type': 'application/activity+json' },
-      body: JSON.stringify({
-        "@context": "https://www.w3.org/ns/activitystreams",
-        type: "Accept",
-        actor: 'actor1',
-        object: req.body,
-        to: [req.body.actor]
-      })
-    }));
-
-    expect(addFollowerToDB).toHaveBeenCalledWith('alice', req.body.actor);
-  });
-
-  it('should handle errors when sending Accept activity', async () => {
-    req.body = { type: 'Follow', actor: { id: 'follower1', inbox: 'http://example.com/inbox' } };
-
-    (fetch as jest.Mock).mockResolvedValue(new FetchResponse(null, { status: 500 }));
-
-    const consoleErrorSpy = jest.spyOn(console, 'error');
-
-    await postInbox(req as Request, res as Response);
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to send Accept activity:', 'Internal Server Error');
-    consoleErrorSpy.mockRestore();
-  });
-
-  it('should respond with status ok', async () => {
-    req.body = { type: 'Follow', actor: { id: 'follower1', inbox: 'http://example.com/inbox' } };
-
-    await postInbox(req as Request, res as Response);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ status: 'ok' });
-  });
-};
+      - name: Run tests
+        run: npm test
