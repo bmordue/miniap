@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import rateLimit from 'express-rate-limit';
 import { Actor, OrderedCollection, Note, Create } from './types';
 import { json } from 'body-parser';
 import { PORT, USERNAME } from './constants';
@@ -6,8 +7,15 @@ import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
 import { getNote } from './services/noteService';
 import { postInbox } from './services/inboxService';
+import verifySignature from './middleware/verifySignature';
 
 const app = express();
+
+// Set up rate limiter: maximum of 100 requests per 15 minutes
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
 app.use(json({ type: ['application/activity+json', 'application/ld+json'] }));
 
 // Middleware for logging requests
@@ -39,7 +47,7 @@ app.get('/users/:username/outbox', activityPubHeaders, getOutbox);
 
 app.get('/users/:username/notes/1', activityPubHeaders, getNote);
 
-app.post('/users/:username/inbox', activityPubHeaders, postInbox);
+app.post('/users/:username/inbox', limiter, verifySignature, activityPubHeaders, postInbox);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
