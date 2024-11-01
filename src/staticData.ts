@@ -1,6 +1,7 @@
 import { BASE_URL, USERNAME } from './constants';
+import { Actor, Note, Create, OrderedCollection } from './types';
 
-export const actor = {
+export const actor: Actor = {
   "@context": [
     "https://www.w3.org/ns/activitystreams",
     "https://w3id.org/security/v1"
@@ -20,7 +21,7 @@ export const actor = {
   }
 };
 
-export const note = {
+export const note: Note = {
   "@context": "https://www.w3.org/ns/activitystreams",
   type: "Note",
   id: `${BASE_URL}/notes/1`,
@@ -30,7 +31,7 @@ export const note = {
   to: ["https://www.w3.org/ns/activitystreams#Public"]
 };
 
-export const createActivity = {
+export const createActivity: Create = {
   "@context": "https://www.w3.org/ns/activitystreams",
   type: "Create",
   id: `${BASE_URL}/create/1`,
@@ -40,14 +41,14 @@ export const createActivity = {
   to: ["https://www.w3.org/ns/activitystreams#Public"]
 };
 
-export const outboxCollection = {
+export const outboxCollection: OrderedCollection = {
   "@context": "https://www.w3.org/ns/activitystreams",
   type: "OrderedCollection",
   totalItems: 1,
   orderedItems: [createActivity]
 };
 
-export const emptyCollection = {
+export const emptyCollection: OrderedCollection = {
   "@context": "https://www.w3.org/ns/activitystreams",
   type: "OrderedCollection",
   totalItems: 0,

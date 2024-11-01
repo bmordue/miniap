@@ -8,11 +8,6 @@ export type Actor = {
   followers: string;
   preferredUsername: string;
   name: string;
-  publicKey?: {
-    id: string;
-    owner: string;
-    publicKeyPem: string;
-  };
 }
 
 export type OrderedCollection = {
