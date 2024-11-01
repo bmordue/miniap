@@ -3,6 +3,16 @@ import { USERNAME } from '../constants';
 import { actor, followersCollection } from '../staticData';
 import fetch from 'node-fetch';
 
+const isValidUrl = (url: string): boolean => {
+  const allowedDomains = ['example.com', 'another-allowed-domain.com'];
+  try {
+    const parsedUrl = new URL(url);
+    return allowedDomains.includes(parsedUrl.hostname);
+  } catch (e) {
+    return false;
+  }
+};
+
 export const postInbox = async (req: Request, res: Response): Promise<void> => {
   if (req.params.username !== USERNAME) {
     res.status(404).json({ error: 'User not found' });
@@ -21,6 +31,11 @@ export const postInbox = async (req: Request, res: Response): Promise<void> => {
       object: activity,
       to: [activity.actor]
     };
+
+    if (!isValidUrl(activity.actor.inbox)) {
+      res.status(400).json({ error: 'Invalid inbox URL' });
+      return;
+    }
 
     try {
       const response = await fetch(activity.actor.inbox, {
