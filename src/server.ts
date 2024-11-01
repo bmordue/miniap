@@ -1,8 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { Actor, OrderedCollection, Note, Create } from 'activitystreams';
 import rateLimit from 'express-rate-limit';
 import { json } from 'body-parser';
-import { PORT, USERNAME } from './constants';
+import { PORT } from './constants';
 import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
 import { getNote } from './services/noteService';
@@ -45,7 +44,7 @@ app.get('/users/:username/following', activityPubHeaders, getFollowing);
 
 app.get('/users/:username/outbox', activityPubHeaders, getOutbox);
 
-app.get('/users/:username/notes/1', activityPubHeaders, getNote);
+app.get('/users/:username/notes/:noteId', activityPubHeaders, getNote);
 
 app.post('/users/:username/inbox', limiter, verifySignature, activityPubHeaders, postInbox);
 

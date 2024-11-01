@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import * as httpSignature from 'http-signature';
-import { actor } from '../staticData';
+import { getPublicKey } from '../services/userService';
 
-const verifySignature = (req: Request, res: Response, next: NextFunction): void => {
+const verifySignature = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const parsedSignature = httpSignature.parseRequest(req);
-    const publicKey = actor.publicKey?.publicKeyPem;
+    const publicKey = await getPublicKey(req.params.username);
 
     if (!publicKey) {
       res.status(400).json({ error: 'Public key not found' });

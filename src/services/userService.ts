@@ -1,27 +1,41 @@
 import { Request, Response } from 'express';
-import { actor, emptyCollection } from '../staticData';
-import { USERNAME } from '../constants';
+import { getUserByUsername, getFollowersCollection, getFollowingCollection } from '../services/databaseService';
 
-export const getUser = (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
+export const getUser = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await getUserByUsername(req.params.username);
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
   }
-  res.json(actor);
 };
 
-export const getFollowers = (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
+export const getFollowers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const followersCollection = await getFollowersCollection(req.params.username);
+    if (!followersCollection) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json(followersCollection);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
   }
-  res.json(emptyCollection);
 };
 
-export const getFollowing = (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
+export const getFollowing = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const followingCollection = await getFollowingCollection(req.params.username);
+    if (!followingCollection) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json(followingCollection);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
   }
-  res.json(emptyCollection);
 };

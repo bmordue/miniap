@@ -1,15 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import * as httpSignature from "http-signature";
 import verifySignature from "../verifySignature";
-import { actor } from "../../staticData";
+import { getPublicKey } from "../../services/userService";
 
 jest.mock("http-signature");
-jest.mock("../../staticData", () => ({
-  actor: {
-    publicKey: {
-      publicKeyPem: "mock-public-key",
-    },
-  },
+jest.mock("../../services/userService", () => ({
+  getPublicKey: jest.fn().mockResolvedValue("mock-public-key"),
 }));
 
 describe("verifySignature middleware", () => {
@@ -50,12 +46,11 @@ describe("verifySignature middleware", () => {
     expect(mockResponse.json).not.toHaveBeenCalled();
   });
 
-  it("should return 400 when public key is missing", () => {
-    // Temporarily modify actor to simulate missing public key
-    const originalActor = { ...actor };
-    (actor as any).publicKey = undefined;
+  it("should return 400 when public key is missing", async () => {
+    // Mock getPublicKey to return null
+    (getPublicKey as jest.Mock).mockResolvedValueOnce(null);
 
-    verifySignature(
+    await verifySignature(
       mockRequest as Request,
       mockResponse as Response,
       nextFunction,
@@ -66,9 +61,6 @@ describe("verifySignature middleware", () => {
       error: "Public key not found",
     });
     expect(nextFunction).not.toHaveBeenCalled();
-
-    // Restore actor
-    Object.assign(actor, originalActor);
   });
 
   it("should return 401 when signature is invalid", () => {
