@@ -1,5 +1,5 @@
 import { BASE_URL, USERNAME } from './constants';
-import { Actor, Note, Create, OrderedCollection } from 'activitystreams';
+import { Actor, Note, Create, OrderedCollection } from './types';
 
 export const actor: Actor = {
   "@context": [
@@ -13,12 +13,7 @@ export const actor: Actor = {
   following: `${BASE_URL}/following`,
   followers: `${BASE_URL}/followers`,
   preferredUsername: USERNAME,
-  name: "Alice",
-  publicKey: {
-    id: `${BASE_URL}#main-key`,
-    owner: BASE_URL,
-    publicKeyPem: "-----BEGIN PUBLIC KEY-----\n..."
-  }
+  name: "Alice"
 };
 
 export const note: Note = {

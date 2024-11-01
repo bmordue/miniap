@@ -1,13 +1,11 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { Actor, OrderedCollection, Note, Create } from 'activitystreams';
 import rateLimit from 'express-rate-limit';
 import { json } from 'body-parser';
-import { PORT, USERNAME } from './constants';
+import { PORT } from './constants';
 import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
 import { getNote } from './services/noteService';
 import { postInbox } from './services/inboxService';
-import verifySignature from './middleware/verifySignature';
 
 const app = express();
 
@@ -47,7 +45,7 @@ app.get('/users/:username/outbox', activityPubHeaders, getOutbox);
 
 app.get('/users/:username/notes/1', activityPubHeaders, getNote);
 
-app.post('/users/:username/inbox', limiter, verifySignature, activityPubHeaders, postInbox);
+app.post('/users/:username/inbox', limiter, activityPubHeaders, postInbox);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
