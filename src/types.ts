@@ -1,3 +1,5 @@
+import { Actor, OrderedCollection, Note, Create } from 'activitystreams';
+
 export type Actor = {
   "@context": string[];
   type: string;

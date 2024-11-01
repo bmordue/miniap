@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
+import { Actor, OrderedCollection, Note, Create } from 'activitystreams';
 import rateLimit from 'express-rate-limit';
-import { Actor, OrderedCollection, Note, Create } from './types';
 import { json } from 'body-parser';
 import { PORT, USERNAME } from './constants';
 import { getUser, getFollowers, getFollowing } from './services/userService';
