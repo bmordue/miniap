@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { USERNAME } from '../constants';
-import { actor, followersCollection } from '../staticData';
+import { getActorFromDB, addFollowerToDB } from '../dbService';
 import fetch from 'node-fetch';
 
 const isValidUrl = (url: string): boolean => {
@@ -14,7 +13,10 @@ const isValidUrl = (url: string): boolean => {
 };
 
 export const postInbox = async (req: Request, res: Response): Promise<void> => {
-  if (req.params.username !== USERNAME) {
+  const username = req.params.username;
+  const actor = await getActorFromDB(username);
+
+  if (!actor) {
     res.status(404).json({ error: 'User not found' });
     return;
   }
@@ -54,8 +56,7 @@ export const postInbox = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Update the followers collection
-    followersCollection.orderedItems.push(activity.actor);
-    followersCollection.totalItems += 1;
+    await addFollowerToDB(username, activity.actor);
   }
 
   res.status(200).json({ status: 'ok' });

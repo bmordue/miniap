@@ -1,11 +1,17 @@
 import { Request, Response } from 'express';
-import { outboxCollection } from '../staticData';
-import { USERNAME } from '../constants';
+import { getOutboxFromDB } from '../dbService';
 
-export const getOutbox = (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
+export const getOutbox = async (req: Request, res: Response): Promise<void> => {
+  const username = req.params.username;
+  try {
+    const outboxCollection = await getOutboxFromDB(username);
+    if (!outboxCollection) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json(outboxCollection);
+  } catch (error) {
+    console.error('Error fetching outbox from database:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  res.json(outboxCollection);
 };

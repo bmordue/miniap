@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { postInbox } from '../inboxService';
-import { actor, followersCollection } from '../../staticData';
+import { getActorFromDB, addFollowerToDB } from '../dbService';
 import fetch from 'node-fetch';
 
 jest.mock('node-fetch');
@@ -19,12 +19,11 @@ describe('postInbox', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
-    followersCollection.orderedItems = [];
-    followersCollection.totalItems = 0;
   });
 
-  it('should respond with 404 if username is not alice', async () => {
+  it('should respond with 404 if username is not found in the database', async () => {
     req.params.username = 'bob';
+    (getActorFromDB as jest.Mock).mockResolvedValue(null);
 
     await postInbox(req as Request, res as Response);
 
@@ -46,6 +45,8 @@ describe('postInbox', () => {
     req.body = { type: 'Follow', actor: { id: 'follower1', inbox: 'http://example.com/inbox' } };
 
     (fetch as jest.Mock).mockResolvedValue(new FetchResponse(null, { status: 200 }));
+    (getActorFromDB as jest.Mock).mockResolvedValue({ id: 'actor1' });
+    (addFollowerToDB as jest.Mock).mockResolvedValue(true);
 
     await postInbox(req as Request, res as Response);
 
@@ -55,14 +56,13 @@ describe('postInbox', () => {
       body: JSON.stringify({
         "@context": "https://www.w3.org/ns/activitystreams",
         type: "Accept",
-        actor: actor.id,
+        actor: 'actor1',
         object: req.body,
         to: [req.body.actor]
       })
     }));
 
-    expect(followersCollection.orderedItems).toContain(req.body.actor);
-    expect(followersCollection.totalItems).toBe(1);
+    expect(addFollowerToDB).toHaveBeenCalledWith('alice', req.body.actor);
   });
 
   it('should handle errors when sending Accept activity', async () => {
@@ -86,4 +86,4 @@ describe('postInbox', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: 'ok' });
   });
-});
+};
