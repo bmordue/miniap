@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { Actor, OrderedCollection, Note, Create } from './types';
+import { Actor, OrderedCollection, Note, Create } from 'activitystreams';
 import { json } from 'body-parser';
 import { actor, note, createActivity, outboxCollection, emptyCollection } from './staticData';
 import { PORT, USERNAME } from './constants';
