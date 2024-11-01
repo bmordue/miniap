@@ -2,14 +2,10 @@ import express, { Request, Response, NextFunction } from 'express';
 import { Actor, OrderedCollection, Note, Create } from './types';
 import { json } from 'body-parser';
 import { actor, note, createActivity, outboxCollection, emptyCollection } from './staticData';
+import { PORT, USERNAME } from './constants';
 
 const app = express();
 app.use(json({ type: ['application/activity+json', 'application/ld+json'] }));
-
-const PORT = 3000;
-const DOMAIN = 'example.com';
-const USERNAME = 'alice';
-const BASE_URL = `https://${DOMAIN}/users/${USERNAME}`;
 
 // Middleware for logging requests
 const logRequests = (req: Request, res: Response, next: NextFunction): void => {

@@ -1,4 +1,4 @@
-const BASE_URL = `https://${DOMAIN}/users/${USERNAME}`;
+import { BASE_URL, USERNAME } from './constants';
 
 export const actor = {
   "@context": [
@@ -11,7 +11,7 @@ export const actor = {
   outbox: `${BASE_URL}/outbox`,
   following: `${BASE_URL}/following`,
   followers: `${BASE_URL}/followers`,
-  preferredUsername: USERNAME,
+  preferredUsername: ${USERNAME},
   name: "Alice",
   publicKey: {
     id: `${BASE_URL}#main-key`,
