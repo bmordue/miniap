@@ -1,10 +1,21 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { Actor, OrderedCollection, Note, Create } from 'activitystreams';
+import rateLimit from 'express-rate-limit';
 import { json } from 'body-parser';
-import { actor, note, createActivity, outboxCollection, emptyCollection } from './staticData';
 import { PORT, USERNAME } from './constants';
+import { getUser, getFollowers, getFollowing } from './services/userService';
+import { getOutbox } from './services/collectionService';
+import { getNote } from './services/noteService';
+import { postInbox } from './services/inboxService';
+import verifySignature from './middleware/verifySignature';
 
 const app = express();
+
+// Set up rate limiter: maximum of 100 requests per 15 minutes
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
 app.use(json({ type: ['application/activity+json', 'application/ld+json'] }));
 
 // Middleware for logging requests
@@ -26,54 +37,17 @@ const activityPubHeaders = (_req: express.Request, res: Response, next: NextFunc
 };
 
 // Routes
-app.get('/users/:username', activityPubHeaders, (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
-  }
-  res.json(actor);
-});
+app.get('/users/:username', activityPubHeaders, getUser);
 
-app.get('/users/:username/followers', activityPubHeaders, (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
-  }
-  res.json(emptyCollection);
-});
+app.get('/users/:username/followers', activityPubHeaders, getFollowers);
 
-app.get('/users/:username/following', activityPubHeaders, (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
-  }
-  res.json(emptyCollection);
-});
+app.get('/users/:username/following', activityPubHeaders, getFollowing);
 
-app.get('/users/:username/outbox', activityPubHeaders, (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
-  }
-  res.json(outboxCollection);
-});
+app.get('/users/:username/outbox', activityPubHeaders, getOutbox);
 
-app.get('/users/:username/notes/1', activityPubHeaders, (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
-  }
-  res.json(note);
-});
+app.get('/users/:username/notes/1', activityPubHeaders, getNote);
 
-app.post('/users/:username/inbox', activityPubHeaders, (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
-  }
-  console.log('Received activity:', req.body);
-  res.status(200).json({ status: 'ok' });
-});
+app.post('/users/:username/inbox', limiter, verifySignature, activityPubHeaders, postInbox);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
