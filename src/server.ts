@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
+import { Actor, OrderedCollection, Note, Create } from './types';
 import { json } from 'body-parser';
 import { actor, note, createActivity, outboxCollection, emptyCollection } from './staticData';
 
