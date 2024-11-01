@@ -13,7 +13,12 @@ export const actor: Actor = {
   following: `${BASE_URL}/following`,
   followers: `${BASE_URL}/followers`,
   preferredUsername: USERNAME,
-  name: "Alice"
+  name: "Alice",
+  publicKey: {
+    id: `${BASE_URL}#main-key`,
+    owner: BASE_URL,
+    publicKeyPem: "-----BEGIN PUBLIC KEY-----\n..."
+  }
 };
 
 export const note: Note = {
@@ -44,6 +49,13 @@ export const outboxCollection: OrderedCollection = {
 };
 
 export const emptyCollection: OrderedCollection = {
+  "@context": "https://www.w3.org/ns/activitystreams",
+  type: "OrderedCollection",
+  totalItems: 0,
+  orderedItems: []
+};
+
+export const followersCollection = {
   "@context": "https://www.w3.org/ns/activitystreams",
   type: "OrderedCollection",
   totalItems: 0,
