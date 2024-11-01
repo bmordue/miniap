@@ -3,6 +3,7 @@ import { Actor, OrderedCollection, Note, Create } from './types';
 import { json } from 'body-parser';
 import { actor, note, createActivity, outboxCollection, emptyCollection } from './staticData';
 import { PORT, USERNAME } from './constants';
+import verifySignature from './middleware/verifySignature';
 
 const app = express();
 app.use(json({ type: ['application/activity+json', 'application/ld+json'] }));
@@ -66,7 +67,7 @@ app.get('/users/:username/notes/1', activityPubHeaders, (req: Request, res: Resp
   res.json(note);
 });
 
-app.post('/users/:username/inbox', activityPubHeaders, (req: Request, res: Response): void => {
+app.post('/users/:username/inbox', verifySignature, activityPubHeaders, (req: Request, res: Response): void => {
   if (req.params.username !== USERNAME) {
     res.status(404).json({ error: 'User not found' });
     return;
