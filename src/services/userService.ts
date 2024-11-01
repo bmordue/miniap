@@ -1,27 +1,47 @@
 import { Request, Response } from 'express';
-import { actor, emptyCollection, followersCollection } from '../staticData';
-import { USERNAME } from '../constants';
+import { getActorFromDB, getFollowersFromDB, getFollowingFromDB } from '../dbService';
 
-export const getUser = (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
+export const getUser = async (req: Request, res: Response): Promise<void> => {
+  const username = req.params.username;
+  try {
+    const actor = await getActorFromDB(username);
+    if (!actor) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json(actor);
+  } catch (error) {
+    console.error('Error fetching actor from database:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  res.json(actor);
 };
 
-export const getFollowers = (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
+export const getFollowers = async (req: Request, res: Response): Promise<void> => {
+  const username = req.params.username;
+  try {
+    const followersCollection = await getFollowersFromDB(username);
+    if (!followersCollection) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json(followersCollection);
+  } catch (error) {
+    console.error('Error fetching followers from database:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  res.json(followersCollection);
 };
 
-export const getFollowing = (req: Request, res: Response): void => {
-  if (req.params.username !== USERNAME) {
-    res.status(404).json({ error: 'User not found' });
-    return;
+export const getFollowing = async (req: Request, res: Response): Promise<void> => {
+  const username = req.params.username;
+  try {
+    const followingCollection = await getFollowingFromDB(username);
+    if (!followingCollection) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json(followingCollection);
+  } catch (error) {
+    console.error('Error fetching following from database:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  res.json(emptyCollection);
 };

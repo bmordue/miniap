@@ -1,7 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import { json } from 'body-parser';
-import { PORT } from './constants';
 import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
 import { getNote } from './services/noteService';
@@ -47,6 +46,6 @@ app.get('/users/:username/notes/1', activityPubHeaders, getNote);
 
 app.post('/users/:username/inbox', limiter, activityPubHeaders, postInbox);
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`Server running at http://localhost:${process.env.PORT || 3000}`);
 });
