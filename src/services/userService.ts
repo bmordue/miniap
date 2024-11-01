@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { actor, emptyCollection } from '../staticData';
+import { actor, emptyCollection, followersCollection } from '../staticData';
 import { USERNAME } from '../constants';
 
 export const getUser = (req: Request, res: Response): void => {
@@ -15,7 +15,7 @@ export const getFollowers = (req: Request, res: Response): void => {
     res.status(404).json({ error: 'User not found' });
     return;
   }
-  res.json(emptyCollection);
+  res.json(followersCollection);
 };
 
 export const getFollowing = (req: Request, res: Response): void => {

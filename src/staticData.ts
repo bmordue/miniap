@@ -11,7 +11,7 @@ export const actor = {
   outbox: `${BASE_URL}/outbox`,
   following: `${BASE_URL}/following`,
   followers: `${BASE_URL}/followers`,
-  preferredUsername: ${USERNAME},
+  preferredUsername: USERNAME,
   name: "Alice",
   publicKey: {
     id: `${BASE_URL}#main-key`,
@@ -48,6 +48,13 @@ export const outboxCollection = {
 };
 
 export const emptyCollection = {
+  "@context": "https://www.w3.org/ns/activitystreams",
+  type: "OrderedCollection",
+  totalItems: 0,
+  orderedItems: []
+};
+
+export const followersCollection = {
   "@context": "https://www.w3.org/ns/activitystreams",
   type: "OrderedCollection",
   totalItems: 0,
