@@ -36,3 +36,38 @@ export type Create = {
   object: Note;
   to: string[];
 }
+
+// Database schema definitions
+
+export type ActorDB = {
+  id: string;
+  preferredUsername: string;
+  name: string;
+  inbox: string;
+  outbox: string;
+  following: string;
+  followers: string;
+}
+
+export type FollowerDB = {
+  username: string;
+  follower: string;
+}
+
+export type FollowingDB = {
+  username: string;
+  following: string;
+}
+
+export type OutboxDB = {
+  username: string;
+  outbox: OrderedCollection;
+}
+
+export type NoteDB = {
+  id: string;
+  attributedTo: string;
+  content: string;
+  published: string;
+  to: string[];
+}
