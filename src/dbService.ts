@@ -1,84 +1,58 @@
-import { Pool } from 'pg';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 import { Actor, OrderedCollection, Note } from './types';
 
-const pool = new Pool({
-  user: 'your_db_user',
-  host: 'localhost',
-  database: 'your_db_name',
-  password: 'your_db_password',
-  port: 5432,
+const dbPromise = open({
+  filename: 'activitypub.db',
+  driver: sqlite3.Database
 });
 
 export const getActorFromDB = async (username: string): Promise<Actor | null> => {
-  const client = await pool.connect();
-  try {
-    const res = await client.query('SELECT * FROM actors WHERE preferredUsername = $1', [username]);
-    if (res.rows.length === 0) {
-      return null;
-    }
-    return res.rows[0];
-  } finally {
-    client.release();
+  const db = await dbPromise;
+  const res = await db.get('SELECT * FROM actors WHERE preferredUsername = ?', [username]);
+  if (!res) {
+    return null;
   }
+  return res;
 };
 
 export const getFollowersFromDB = async (username: string): Promise<OrderedCollection | null> => {
-  const client = await pool.connect();
-  try {
-    const res = await client.query('SELECT * FROM followers WHERE username = $1', [username]);
-    if (res.rows.length === 0) {
-      return null;
-    }
-    return res.rows[0];
-  } finally {
-    client.release();
+  const db = await dbPromise;
+  const res = await db.get('SELECT * FROM followers WHERE username = ?', [username]);
+  if (!res) {
+    return null;
   }
+  return res;
 };
 
 export const getFollowingFromDB = async (username: string): Promise<OrderedCollection | null> => {
-  const client = await pool.connect();
-  try {
-    const res = await client.query('SELECT * FROM following WHERE username = $1', [username]);
-    if (res.rows.length === 0) {
-      return null;
-    }
-    return res.rows[0];
-  } finally {
-    client.release();
+  const db = await dbPromise;
+  const res = await db.get('SELECT * FROM following WHERE username = ?', [username]);
+  if (!res) {
+    return null;
   }
+  return res;
 };
 
 export const getOutboxFromDB = async (username: string): Promise<OrderedCollection | null> => {
-  const client = await pool.connect();
-  try {
-    const res = await client.query('SELECT * FROM outbox WHERE username = $1', [username]);
-    if (res.rows.length === 0) {
-      return null;
-    }
-    return res.rows[0];
-  } finally {
-    client.release();
+  const db = await dbPromise;
+  const res = await db.get('SELECT * FROM outbox WHERE username = ?', [username]);
+  if (!res) {
+    return null;
   }
+  return res;
 };
 
 export const getNoteFromDB = async (username: string): Promise<Note | null> => {
-  const client = await pool.connect();
-  try {
-    const res = await client.query('SELECT * FROM notes WHERE username = $1', [username]);
-    if (res.rows.length === 0) {
-      return null;
-    }
-    return res.rows[0];
-  } finally {
-    client.release();
+  const db = await dbPromise;
+  const res = await db.get('SELECT * FROM notes WHERE username = ?', [username]);
+  if (!res) {
+    return null;
   }
+  return res;
 };
 
 export const addFollowerToDB = async (username: string, follower: string): Promise<void> => {
-  const client = await pool.connect();
-  try {
-    await client.query('INSERT INTO followers (username, follower) VALUES ($1, $2)', [username, follower]);
-  } finally {
-    client.release();
-  }
+  const db = await dbPromise;
+  await db.run('INSERT INTO followers (username, follower) VALUES (?, ?)', [username, follower]);
 };
