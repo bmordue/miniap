@@ -1,18 +1,35 @@
 import { Request, Response } from 'express';
 import { getActorFromDB, addFollowerToDB } from '../dbService';
 import fetch from 'node-fetch';
+import httpSignature from 'http-signature';
 
 const isValidUrl = (url: string): boolean => {
   const allowedDomains = ['example.com', 'another-allowed-domain.com'];
   try {
     const parsedUrl = new URL(url);
-    return allowedDomains.includes(parsedUrl.hostname);
+    return allowedDomains.includes(parsedUrl.hostname) && parsedUrl.pathname === '/inbox';
   } catch (e) {
     return false;
   }
 };
 
+const verifyRequestSignature = (req: Request): boolean => {
+  try {
+    const parsed = httpSignature.parseRequest(req);
+    const publicKey = '-----BEGIN PUBLIC KEY-----\n...your public key here...\n-----END PUBLIC KEY-----';
+    return httpSignature.verifySignature(parsed, publicKey);
+  } catch (e) {
+    console.error('Error verifying request signature:', e);
+    return false;
+  }
+};
+
 export const postInbox = async (req: Request, res: Response): Promise<void> => {
+  if (!verifyRequestSignature(req)) {
+    res.status(400).json({ error: 'Invalid request signature' });
+    return;
+  }
+
   const username = req.params.username;
   const actor = await getActorFromDB(username);
 
