@@ -116,6 +116,7 @@ describe('deleteNote', () => {
     res = {
       status: jest.fn().mockReturnThis(),
       send: jest.fn(),
+      json: jest.fn(),
     };
   });
 
@@ -135,6 +136,6 @@ describe('deleteNote', () => {
 
     expect(deleteNoteFromDB).toHaveBeenCalledWith("1");
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.send).toHaveBeenCalledWith({ error: "Internal server error" });
+    expect(res.json).toHaveBeenCalledWith({ error: "Internal server error" });
   });
 });
