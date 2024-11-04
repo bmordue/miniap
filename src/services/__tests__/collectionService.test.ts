@@ -9,6 +9,7 @@ describe("getOutbox", () => {
   let res: Partial<Response>;
 
   beforeEach(() => {
+    process.env.DB_FILENAME = ":memory:";
     req = {
       params: { username: "alice" },
     };
