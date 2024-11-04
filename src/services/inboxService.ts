@@ -3,17 +3,21 @@ import { getActorFromDB, addFollowerToDB } from '../dbService';
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
 
-const isValidUrl = (url: string): boolean => {
+function last(arr :any[]) {
+  return arr[arr.length - 1];
+}
+
+export function isValidUrl(url: string): boolean {
   const allowedDomains = ['example.com', 'another-allowed-domain.com'];
   try {
     const parsedUrl = new URL(url);
-    return allowedDomains.includes(parsedUrl.hostname) && parsedUrl.pathname === '/inbox';
+    return allowedDomains.includes(parsedUrl.hostname) && last(parsedUrl.pathname.split('/')) === 'inbox';
   } catch (e) {
     return false;
   }
 };
 
-const verifyRequestSignature = (req: Request): boolean => {
+function verifyRequestSignature(req: Request): boolean {
   try {
     const parsed = httpSignature.parseRequest(req.body);
     const publicKey = '-----BEGIN PUBLIC KEY-----\n...your public key here...\n-----END PUBLIC KEY-----';
@@ -24,7 +28,7 @@ const verifyRequestSignature = (req: Request): boolean => {
   }
 };
 
-export const postInbox = async (req: Request, res: Response): Promise<void> => {
+export async function postInbox(req: Request, res: Response): Promise<void> {
   if (!verifyRequestSignature(req)) {
     res.status(400).json({ error: 'Invalid request signature' });
     return;
@@ -67,6 +71,8 @@ export const postInbox = async (req: Request, res: Response): Promise<void> => {
 
       if (!response.ok) {
         console.error('Failed to send Accept activity:', response.statusText);
+      } else {
+        console.log('Accept activity sent successfully:', response.status);
       }
     } catch (error) {
       console.error('Error sending Accept activity:', error);
