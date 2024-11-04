@@ -15,7 +15,7 @@ const isValidUrl = (url: string): boolean => {
 
 const verifyRequestSignature = (req: Request): boolean => {
   try {
-    const parsed = httpSignature.parseRequest(req);
+    const parsed = httpSignature.parseRequest(req.body);
     const publicKey = '-----BEGIN PUBLIC KEY-----\n...your public key here...\n-----END PUBLIC KEY-----';
     return httpSignature.verifySignature(parsed, publicKey);
   } catch (e) {
