@@ -67,6 +67,8 @@ export const postInbox = async (req: Request, res: Response): Promise<void> => {
 
       if (!response.ok) {
         console.error('Failed to send Accept activity:', response.statusText);
+      } else {
+        console.log('Accept activity sent successfully:', response.status);
       }
     } catch (error) {
       console.error('Error sending Accept activity:', error);
