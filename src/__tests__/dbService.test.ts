@@ -8,21 +8,33 @@ import {
 } from "../dbService";
 import { Note } from "../types";
 
+// Mock the database modules
 jest.mock("sqlite3");
-jest.mock("sqlite");
+jest.mock("sqlite", () => ({
+  open: jest.fn(),
+}));
+
+// Create a mock database instance
+const mockDb = {
+  run: jest.fn(),
+  get: jest.fn(),
+};
+
+// Mock the open function to return our mock database
+(open as jest.Mock).mockResolvedValue(mockDb);
 
 describe("Database Note Operations", () => {
-  let mockDb: any;
   let mockNote: Note;
 
   beforeEach(() => {
-    process.env.DB_FILENAME = ":memory:";
-    mockDb = {
-      run: jest.fn().mockResolvedValue(undefined),
-      get: jest.fn().mockResolvedValue({ id: "1" }),
-    };
+    // Reset all mocks before each test
+    jest.clearAllMocks();
 
-    (open as jest.Mock).mockResolvedValue(mockDb);
+    process.env.DB_FILENAME = ":memory:";
+
+    // Reset mock implementations
+    mockDb.run.mockResolvedValue(undefined);
+    mockDb.get.mockResolvedValue({ id: "1" });
 
     mockNote = {
       "@context": "https://www.w3.org/ns/activitystreams",
@@ -33,10 +45,6 @@ describe("Database Note Operations", () => {
       published: "2023-01-01T00:00:00Z",
       to: ["https://www.w3.org/ns/activitystreams#Public"],
     };
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
   });
 
   describe("addNoteToDB", () => {
@@ -57,7 +65,7 @@ describe("Database Note Operations", () => {
 
     it("should throw an error if database operation fails", async () => {
       const error = new Error("Database error");
-      mockDb.run.mockRejectedValue(error);
+      mockDb.run.mockRejectedValueOnce(error);
 
       await expect(addNoteToDB(mockNote)).rejects.toThrow("Database error");
     });
@@ -80,7 +88,7 @@ describe("Database Note Operations", () => {
 
     it("should throw an error if database operation fails", async () => {
       const error = new Error("Database error");
-      mockDb.run.mockRejectedValue(error);
+      mockDb.run.mockRejectedValueOnce(error);
 
       await expect(updateNoteInDB(mockNote)).rejects.toThrow("Database error");
     });
@@ -99,7 +107,7 @@ describe("Database Note Operations", () => {
 
     it("should throw an error if database operation fails", async () => {
       const error = new Error("Database error");
-      mockDb.run.mockRejectedValue(error);
+      mockDb.run.mockRejectedValueOnce(error);
 
       await expect(deleteNoteFromDB("1")).rejects.toThrow("Database error");
     });
@@ -109,7 +117,7 @@ describe("Database Note Operations", () => {
     it("should successfully retrieve a note from the database", async () => {
       const username = "alice";
       const mockNoteData = { ...mockNote };
-      mockDb.get.mockResolvedValue(mockNoteData);
+      mockDb.get.mockResolvedValueOnce(mockNoteData);
 
       const result = await getNoteFromDB(username);
 
@@ -121,7 +129,7 @@ describe("Database Note Operations", () => {
     });
 
     it("should return null if note is not found", async () => {
-      mockDb.get.mockResolvedValue(null);
+      mockDb.get.mockResolvedValueOnce(null);
 
       const result = await getNoteFromDB("alice");
 
@@ -130,7 +138,7 @@ describe("Database Note Operations", () => {
 
     it("should throw an error if database operation fails", async () => {
       const error = new Error("Database error");
-      mockDb.get.mockRejectedValue(error);
+      mockDb.get.mockRejectedValueOnce(error);
 
       await expect(getNoteFromDB("alice")).rejects.toThrow("Database error");
     });
