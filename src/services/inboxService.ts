@@ -28,6 +28,17 @@ function verifyRequestSignature(req: Request): boolean {
   }
 };
 
+const signActivity = (activity: any, privateKey: string, keyId: string): any => {
+  const signedActivity = { ...activity };
+  const options = {
+    key: privateKey,
+    keyId: keyId,
+    headers: ['(request-target)', 'date', 'digest'],
+  };
+  httpSignature.sign(signedActivity, options);
+  return signedActivity;
+};
+
 export async function postInbox(req: Request, res: Response): Promise<void> {
   if (!verifyRequestSignature(req)) {
     res.status(400).json({ error: 'Invalid request signature' });
@@ -60,13 +71,17 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    const privateKey = '-----BEGIN PRIVATE KEY-----\n...your private key here...\n-----END PRIVATE KEY-----';
+    const keyId = 'https://example.com/keys/1';
+    const signedAcceptActivity = signActivity(acceptActivity, privateKey, keyId);
+
     try {
       const response = await fetch(activity.actor.inbox, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/activity+json'
         },
-        body: JSON.stringify(acceptActivity)
+        body: JSON.stringify(signedAcceptActivity)
       });
 
       if (!response.ok) {
