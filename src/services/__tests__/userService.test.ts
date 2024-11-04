@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { getUser, getFollowers, getFollowing } from '../userService';
-import { getActorFromDB, getFollowersFromDB, getFollowingFromDB } from '../../dbService';
+import { getUser, getFollowers, getFollowing, getFollowersWithVisibility, logDeliveryFailure, getDeliveryFailures } from '../userService';
+import { getActorFromDB, getFollowersFromDB, getFollowingFromDB, getFollowersWithVisibilityFromDB, logDeliveryFailure as logDeliveryFailureDB, getDeliveryFailures as getDeliveryFailuresDB } from '../../dbService';
 
 jest.mock('../../dbService');
 
@@ -150,6 +150,123 @@ describe('userService', () => {
       await getFollowing(req as Request, res as Response);
 
       expect(getFollowingFromDB).toHaveBeenCalledWith('alice');
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+    });
+  });
+
+  describe('getFollowersWithVisibility', () => {
+    it('should return followers with visibility data when found in database', async () => {
+      const mockFollowersWithVisibilityData = [
+        {
+          id: "https://example.com/users/bob",
+          inbox: "https://example.com/users/bob/inbox",
+          visibility: "https://www.w3.org/ns/activitystreams#Public",
+        },
+      ];
+
+      (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowersWithVisibilityData);
+
+      await getFollowersWithVisibility(req as Request, res as Response);
+
+      expect(getFollowersWithVisibilityFromDB).toHaveBeenCalledWith('alice');
+      expect(res.json).toHaveBeenCalledWith(mockFollowersWithVisibilityData);
+    });
+
+    it('should return 404 if followers with visibility are not found', async () => {
+      (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(null);
+
+      await getFollowersWithVisibility(req as Request, res as Response);
+
+      expect(getFollowersWithVisibilityFromDB).toHaveBeenCalledWith('alice');
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Followers not found' });
+    });
+
+    it('should return 500 if database throws an error', async () => {
+      const error = new Error('Database connection failed');
+      (getFollowersWithVisibilityFromDB as jest.Mock).mockRejectedValue(error);
+
+      await getFollowersWithVisibility(req as Request, res as Response);
+
+      expect(getFollowersWithVisibilityFromDB).toHaveBeenCalledWith('alice');
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+    });
+  });
+
+  describe('logDeliveryFailure', () => {
+    it('should log delivery failure', async () => {
+      const mockRequestBody = {
+        username: 'alice',
+        activityId: 'activity123',
+        error: 'Failed to deliver activity',
+      };
+
+      req.body = mockRequestBody;
+
+      await logDeliveryFailure(req as Request, res as Response);
+
+      expect(logDeliveryFailureDB).toHaveBeenCalledWith('alice', 'activity123', 'Failed to deliver activity');
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ status: 'ok' });
+    });
+
+    it('should return 500 if logging delivery failure throws an error', async () => {
+      const mockRequestBody = {
+        username: 'alice',
+        activityId: 'activity123',
+        error: 'Failed to deliver activity',
+      };
+
+      req.body = mockRequestBody;
+
+      const error = new Error('Database connection failed');
+      (logDeliveryFailureDB as jest.Mock).mockRejectedValue(error);
+
+      await logDeliveryFailure(req as Request, res as Response);
+
+      expect(logDeliveryFailureDB).toHaveBeenCalledWith('alice', 'activity123', 'Failed to deliver activity');
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+    });
+  });
+
+  describe('getDeliveryFailures', () => {
+    it('should return delivery failures data when found in database', async () => {
+      const mockDeliveryFailuresData = [
+        {
+          username: 'alice',
+          activityId: 'activity123',
+          error: 'Failed to deliver activity',
+        },
+      ];
+
+      (getDeliveryFailuresDB as jest.Mock).mockResolvedValue(mockDeliveryFailuresData);
+
+      await getDeliveryFailures(req as Request, res as Response);
+
+      expect(getDeliveryFailuresDB).toHaveBeenCalledWith('alice');
+      expect(res.json).toHaveBeenCalledWith(mockDeliveryFailuresData);
+    });
+
+    it('should return 404 if delivery failures are not found', async () => {
+      (getDeliveryFailuresDB as jest.Mock).mockResolvedValue(null);
+
+      await getDeliveryFailures(req as Request, res as Response);
+
+      expect(getDeliveryFailuresDB).toHaveBeenCalledWith('alice');
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Delivery failures not found' });
+    });
+
+    it('should return 500 if database throws an error', async () => {
+      const error = new Error('Database connection failed');
+      (getDeliveryFailuresDB as jest.Mock).mockRejectedValue(error);
+
+      await getDeliveryFailures(req as Request, res as Response);
+
+      expect(getDeliveryFailuresDB).toHaveBeenCalledWith('alice');
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
     });

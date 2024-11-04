@@ -71,3 +71,15 @@ export type NoteDB = {
   published: string;
   to: string[];
 }
+
+export type FollowerWithVisibility = {
+  id: string;
+  inbox: string;
+  visibility: string;
+}
+
+export type DeliveryFailure = {
+  username: string;
+  activityId: string;
+  error: string;
+}

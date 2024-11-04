@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { isValidUrl, postInbox } from "../inboxService";
-import { getActorFromDB } from "../../dbService";
+import { isValidUrl, postInbox, distributeActivity, handleDeliveryFailure, notifyFollowers } from "../inboxService";
+import { getActorFromDB, getFollowersWithVisibilityFromDB, logDeliveryFailure } from "../../dbService";
 import fetch from "node-fetch";
 import httpSignature from "http-signature";
 
@@ -89,5 +89,187 @@ describe("postInbox", () => {
     expect(consoleSpy).toHaveBeenLastCalledWith("Accept activity sent successfully:", 200);
 
     consoleSpy.mockRestore();
+  });
+});
+
+describe("distributeActivity", () => {
+  let req: Partial<Request>;
+  let res: Partial<Response>;
+
+  beforeEach(() => {
+    process.env.DB_FILENAME = ":memory:";
+    req = {
+      params: { username: "alice" },
+      body: {
+        "@context": "https://www.w3.org/ns/activitystreams",
+        type: "Create",
+        actor: "https://example.com/users/alice",
+        object: {
+          type: "Note",
+          content: "Hello, World!",
+        },
+        to: ["https://www.w3.org/ns/activitystreams#Public"],
+      },
+    };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+  });
+
+  it("should distribute activity to followers with matching visibility", async () => {
+    const mockFollowers = [
+      {
+        id: "https://example.com/users/bob",
+        inbox: "https://example.com/users/bob/inbox",
+        visibility: "https://www.w3.org/ns/activitystreams#Public",
+      },
+    ];
+
+    (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
+
+    (fetch as unknown as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+    });
+
+    await distributeActivity(req as Request, res as Response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://example.com/users/bob/inbox",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/activity+json",
+        },
+        body: expect.stringContaining('"type":"Create"'),
+      })
+    );
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ status: "ok" });
+  });
+
+  it("should handle delivery failure and log it", async () => {
+    const mockFollowers = [
+      {
+        id: "https://example.com/users/bob",
+        inbox: "https://example.com/users/bob/inbox",
+        visibility: "https://www.w3.org/ns/activitystreams#Public",
+      },
+    ];
+
+    (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
+
+    (fetch as unknown as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+    });
+
+    const logDeliveryFailureSpy = jest.spyOn(logDeliveryFailure, "logDeliveryFailure");
+
+    await distributeActivity(req as Request, res as Response);
+
+    expect(logDeliveryFailureSpy).toHaveBeenCalledWith(
+      "alice",
+      expect.any(String),
+      "Failed to deliver activity to https://example.com/users/bob/inbox: Internal Server Error"
+    );
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ status: "ok" });
+  });
+});
+
+describe("notifyFollowers", () => {
+  let req: Partial<Request>;
+  let res: Partial<Response>;
+
+  beforeEach(() => {
+    process.env.DB_FILENAME = ":memory:";
+    req = {
+      params: { username: "alice" },
+      body: {
+        "@context": "https://www.w3.org/ns/activitystreams",
+        type: "Create",
+        actor: "https://example.com/users/alice",
+        object: {
+          type: "Note",
+          content: "Hello, World!",
+        },
+        to: ["https://www.w3.org/ns/activitystreams#Public"],
+      },
+    };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+  });
+
+  it("should notify followers of new activity", async () => {
+    const mockFollowers = [
+      {
+        id: "https://example.com/users/bob",
+        inbox: "https://example.com/users/bob/inbox",
+        visibility: "https://www.w3.org/ns/activitystreams#Public",
+      },
+    ];
+
+    (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
+
+    (fetch as unknown as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+    });
+
+    await notifyFollowers(req as Request, res as Response);
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://example.com/users/bob/inbox",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/activity+json",
+        },
+        body: expect.stringContaining('"type":"Create"'),
+      })
+    );
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ status: "ok" });
+  });
+
+  it("should handle delivery failure and log it", async () => {
+    const mockFollowers = [
+      {
+        id: "https://example.com/users/bob",
+        inbox: "https://example.com/users/bob/inbox",
+        visibility: "https://www.w3.org/ns/activitystreams#Public",
+      },
+    ];
+
+    (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
+
+    (fetch as unknown as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+    });
+
+    const logDeliveryFailureSpy = jest.spyOn(logDeliveryFailure, "logDeliveryFailure");
+
+    await notifyFollowers(req as Request, res as Response);
+
+    expect(logDeliveryFailureSpy).toHaveBeenCalledWith(
+      "alice",
+      expect.any(String),
+      "Failed to notify follower at https://example.com/users/bob/inbox: Internal Server Error"
+    );
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ status: "ok" });
   });
 });

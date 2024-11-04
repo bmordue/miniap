@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
-import { getActorFromDB, addFollowerToDB } from '../dbService';
+import { getActorFromDB, addFollowerToDB, getFollowersWithVisibilityFromDB, logDeliveryFailure } from '../dbService';
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
+import { FollowerWithVisibility } from '../types';
 
 function last(arr :any[]) {
   return arr[arr.length - 1];
@@ -83,4 +84,90 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
   }
 
   res.status(200).json({ status: 'ok' });
+};
+
+export async function distributeActivity(req: Request, res: Response): Promise<void> {
+  const username = req.params.username;
+  const activity = req.body;
+
+  try {
+    const followers = await getFollowersWithVisibilityFromDB(username);
+    if (!followers) {
+      res.status(404).json({ error: 'Followers not found' });
+      return;
+    }
+
+    const deliveryPromises = followers.map(async (follower: FollowerWithVisibility) => {
+      if (activity.to.includes(follower.visibility)) {
+        try {
+          const response = await fetch(follower.inbox, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/activity+json'
+            },
+            body: JSON.stringify(activity)
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to deliver activity to ${follower.inbox}: ${response.statusText}`);
+          }
+        } catch (error) {
+          await handleDeliveryFailure(username, activity.id, error.message);
+        }
+      }
+    });
+
+    await Promise.all(deliveryPromises);
+    res.status(200).json({ status: 'ok' });
+  } catch (error) {
+    console.error('Error distributing activity:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export async function handleDeliveryFailure(username: string, activityId: string, error: string): Promise<void> {
+  try {
+    await logDeliveryFailure(username, activityId, error);
+  } catch (logError) {
+    console.error('Error logging delivery failure:', logError);
+  }
+};
+
+export async function notifyFollowers(req: Request, res: Response): Promise<void> {
+  const username = req.params.username;
+  const activity = req.body;
+
+  try {
+    const followers = await getFollowersWithVisibilityFromDB(username);
+    if (!followers) {
+      res.status(404).json({ error: 'Followers not found' });
+      return;
+    }
+
+    const notificationPromises = followers.map(async (follower: FollowerWithVisibility) => {
+      if (activity.to.includes(follower.visibility)) {
+        try {
+          const response = await fetch(follower.inbox, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/activity+json'
+            },
+            body: JSON.stringify(activity)
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to notify follower at ${follower.inbox}: ${response.statusText}`);
+          }
+        } catch (error) {
+          await handleDeliveryFailure(username, activity.id, error.message);
+        }
+      }
+    });
+
+    await Promise.all(notificationPromises);
+    res.status(200).json({ status: 'ok' });
+  } catch (error) {
+    console.error('Error notifying followers:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
