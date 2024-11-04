@@ -3,7 +3,7 @@ import { open } from 'sqlite';
 import { Actor, OrderedCollection, Note } from './types';
 
 const dbPromise = open({
-  filename: 'activitypub.db',
+  filename: process.env.DB_FILENAME || 'activitypub.db',
   driver: sqlite3.Database
 });
 
