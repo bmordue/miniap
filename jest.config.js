@@ -7,4 +7,6 @@ module.exports = {
     "^.+\\.ts$": "ts-jest",
   },
   moduleFileExtensions: ["ts", "js", "json", "node"],
+  collectCoverageFrom: ["src/**/*.ts"],
+  coveragePathIgnorePatterns: ["__tests__"]
 };
