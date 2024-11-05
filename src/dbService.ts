@@ -9,12 +9,19 @@ class DbService {
 
   constructor(db: Database) {
     this.db = db;
-    this.initializeDatabase().catch((error) => {
-      console.error('Error initializing database:', error);
-    });
+    // this.initializeDatabase().catch((error) => {
+    //   console.error('Error initializing database:', error);
+    // });
   }
 
-  private async initializeDatabase(): Promise<void> {
+  public static async open(filename :string | undefined) {
+    return await open({
+      filename: filename ?? ':memory:',
+      driver: sqlite3.Database
+    })
+  }
+
+  public async initializeDatabase(): Promise<void> {
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf-8');
     await this.db.exec(schema);
@@ -66,14 +73,14 @@ class DbService {
 
   public async addNoteToDB(note: Note): Promise<void> {
     await this.db.run(
-      'INSERT INTO notes (id, attributedTo, content, published, to, visibility) VALUES (?, ?, ?, ?, ?, ?)',
-    [note.id, note.attributedTo, note.content, note.published, JSON.stringify(note.to), note.visibility]
+      'INSERT INTO notes (attributedTo, content, published, toActor, visibility) VALUES (?, ?, ?, ?, ?)',
+    [note.attributedTo, note.content, note.published, JSON.stringify(note.to), note.visibility]
     );
   }
 
   public async updateNoteInDB(note: Note): Promise<void> {
     await this.db.run(
-      'UPDATE notes SET content = ?, published = ?, to = ?, visibility = ? WHERE id = ?',
+      'UPDATE notes SET content = ?, published = ?, toActor = ?, visibility = ? WHERE id = ?',
     [note.content, note.published, JSON.stringify(note.to), note.visibility, note.id]
     );
   }

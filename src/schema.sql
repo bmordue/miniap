@@ -31,5 +31,6 @@ CREATE TABLE notes (
     attributedTo TEXT NOT NULL,
     content TEXT NOT NULL,
     published TEXT NOT NULL,
-    to TEXT NOT NULL
+    toActor TEXT NOT NULL,
+    visibility TEXT NOT NULL
 );
