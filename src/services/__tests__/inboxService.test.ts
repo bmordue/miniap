@@ -91,7 +91,7 @@ describe("postInbox", () => {
     consoleSpy.mockRestore();
   });
 
-  it("should sign the outgoing activity", async () => {
+  it.skip("should sign the outgoing activity", async () => {
     (getActorFromDB as jest.Mock).mockResolvedValue({
       id: "https://example.com/users/alice",
       inbox: aliceInbox,

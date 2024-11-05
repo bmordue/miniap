@@ -92,11 +92,11 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
   res.status(200).json({ status: 'ok' });
 };
 
-async function notifyFollower(username :string, follower: FollowerWithVisibility, activity :Note) {
+async function notifyFollower(username :string, follower: FollowerWithVisibility, activity :Activity) {
   if (activity.to.includes(follower.visibility)) {
     const privateKey = '-----BEGIN PRIVATE KEY-----\n...your private key here...\n-----END PRIVATE KEY-----';
     const keyId = 'https://example.com/keys/1';
-    const signedAcceptActivity = signActivity(acceptActivity, privateKey, keyId);
+    const signedAcceptActivity = signActivity(activity, privateKey, keyId);
 
     try {
       const response = await fetch(follower.inbox, {
@@ -111,7 +111,7 @@ async function notifyFollower(username :string, follower: FollowerWithVisibility
         throw new Error(`Failed to deliver activity to ${follower.inbox}: ${response.statusText}`);
       }
     } catch (error :any) {
-      await handleDeliveryFailure(username, activity.id, error.message);
+      await handleDeliveryFailure(username, JSON.stringify(activity), error.message);
     }
   }
 }
@@ -137,9 +137,9 @@ export async function distributeActivity(req: Request, res: Response): Promise<v
   }
 };
 
-export async function handleDeliveryFailure(username: string, activityId: string, error: string): Promise<void> {
+export async function handleDeliveryFailure(username: string, serialisedActivity: string, error: string): Promise<void> {
   try {
-    await logDeliveryFailure(username, activityId, error);
+    await logDeliveryFailure(username, serialisedActivity, error);
   } catch (logError) {
     console.error('Error logging delivery failure:', logError);
   }
