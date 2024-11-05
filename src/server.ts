@@ -5,6 +5,7 @@ import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
 import { getNote, createNote, updateNote, deleteNote } from './services/noteService';
 import { postInbox } from './services/inboxService';
+import { process_activity_for_notifications } from './services/notificationService';
 
 const app = express();
 
@@ -44,7 +45,10 @@ app.get('/users/:username/outbox', activityPubHeaders, getOutbox);
 
 app.get('/users/:username/notes/1', activityPubHeaders, getNote);
 
-app.post('/users/:username/inbox', limiter, activityPubHeaders, postInbox);
+app.post('/users/:username/inbox', limiter, activityPubHeaders, async (req: Request, res: Response) => {
+  await postInbox(req, res);
+  await process_activity_for_notifications(req.body);
+});
 
 app.post('/users/:username/outbox', activityPubHeaders, createNote);
 
