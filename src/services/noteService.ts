@@ -1,17 +1,6 @@
 import { Request, Response } from 'express';
-import httpSignature from 'http-signature';
 import { getNoteFromDB, updateNoteInDB, deleteNoteFromDB, addNoteToDB } from '../dbService';
-
-const signActivity = (activity: any, privateKey: string, keyId: string): any => {
-  const signedActivity = { ...activity };
-  const options = {
-    key: privateKey,
-    keyId: keyId,
-    headers: ['(request-target)', 'date', 'digest'],
-  };
-  httpSignature.sign(signedActivity, options);
-  return signedActivity;
-};
+import { signActivity } from './utils';
 
 export const getNote = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;

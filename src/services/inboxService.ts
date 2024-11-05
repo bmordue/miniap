@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { getActorFromDB, addFollowerToDB } from '../dbService';
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
+import { signActivity } from './utils';
 
 function last(arr :any[]) {
   return arr[arr.length - 1];
@@ -26,17 +27,6 @@ function verifyRequestSignature(req: Request): boolean {
     console.error('Error verifying request signature:', e);
     return false;
   }
-};
-
-const signActivity = (activity: any, privateKey: string, keyId: string): any => {
-  const signedActivity = { ...activity };
-  const options = {
-    key: privateKey,
-    keyId: keyId,
-    headers: ['(request-target)', 'date', 'digest'],
-  };
-  httpSignature.sign(signedActivity, options);
-  return signedActivity;
 };
 
 export async function postInbox(req: Request, res: Response): Promise<void> {
