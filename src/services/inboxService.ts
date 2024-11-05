@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { getActorFromDB, addFollowerToDB } from '../dbService';
+import { open, Database } from 'sqlite';
+import DbService from '../dbService';
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
 import { signActivity } from './utils';
@@ -36,7 +37,11 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
   }
 
   const username = req.params.username;
-  const actor = await getActorFromDB(username);
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
+  const actor = await dbService.getActorFromDB(username);
 
   if (!actor) {
     res.status(404).json({ error: 'User not found' });
@@ -84,7 +89,11 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
     }
 
     // Update the followers collection
-    await addFollowerToDB(username, activity.actor);
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+    await dbService.addFollowerToDB(username, activity.actor);
   }
 
   res.status(200).json({ status: 'ok' });

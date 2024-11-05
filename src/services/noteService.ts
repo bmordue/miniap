@@ -1,11 +1,16 @@
 import { Request, Response } from 'express';
-import { getNoteFromDB, updateNoteInDB, deleteNoteFromDB, addNoteToDB } from '../dbService';
+import DbService from '../dbService';
 import { signActivity } from './utils';
+import { open, Database } from 'sqlite';
 
 export const getNote = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;
   try {
-    const note = await getNoteFromDB(username);
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+    const note = await dbService.getNoteFromDB(username);
     if (!note) {
       res.status(404).json({ error: 'User not found' });
       return;
@@ -25,7 +30,11 @@ export const getNote = async (req: Request, res: Response): Promise<void> => {
 export const createNote = async (req: Request, res: Response): Promise<void> => {
   const note = req.body;
   try {
-    await addNoteToDB(note);
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+    await dbService.addNoteToDB(note);
     res.status(201).json(note);
   } catch (error) {
     console.error('Error adding note to database:', error);
@@ -38,7 +47,11 @@ export const updateNote = async (req: Request, res: Response): Promise<void> => 
   const note = req.body;
 
   try {
-    await updateNoteInDB(note);
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+    await dbService.updateNoteInDB(note);
     res.status(200).json(note);
   } catch (error) {
     console.error('Error updating note in database:', error);
@@ -50,7 +63,11 @@ export const deleteNote = async (req: Request, res: Response): Promise<void> => 
   const noteId = req.params.noteId;
 
   try {
-    await deleteNoteFromDB(noteId);
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+    await dbService.deleteNoteFromDB(noteId);
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting note from database:', error);
