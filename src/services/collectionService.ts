@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getOutboxFromDB, addNoteToDB } from '../dbService';
 import { Note } from '../types';
+import { signActivity } from './utils';
 
 export const getOutbox = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;
@@ -10,7 +11,12 @@ export const getOutbox = async (req: Request, res: Response): Promise<void> => {
       res.status(404).json({ error: 'User not found' });
       return;
     }
-    res.json(outboxCollection);
+
+    const privateKey = '-----BEGIN PRIVATE KEY-----\n...your private key here...\n-----END PRIVATE KEY-----';
+    const keyId = 'https://example.com/keys/1';
+    const signedOutboxCollection = signActivity(outboxCollection, privateKey, keyId);
+
+    res.json(signedOutboxCollection);
   } catch (error) {
     console.error('Error fetching outbox from database:', error);
     res.status(500).json({ error: 'Internal server error' });

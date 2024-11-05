@@ -3,6 +3,7 @@ import { getActorFromDB, addFollowerToDB, getFollowersWithVisibilityFromDB, logD
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
 import { Activity, FollowerWithVisibility, Note } from '../types';
+import { signActivity } from './utils';
 
 function last(arr :any[]) {
   return arr[arr.length - 1];
@@ -93,13 +94,17 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
 
 async function notifyFollower(username :string, follower: FollowerWithVisibility, activity :Note) {
   if (activity.to.includes(follower.visibility)) {
+    const privateKey = '-----BEGIN PRIVATE KEY-----\n...your private key here...\n-----END PRIVATE KEY-----';
+    const keyId = 'https://example.com/keys/1';
+    const signedAcceptActivity = signActivity(acceptActivity, privateKey, keyId);
+
     try {
       const response = await fetch(follower.inbox, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/activity+json'
         },
-        body: JSON.stringify(activity)
+        body: JSON.stringify(signedAcceptActivity)
       });
 
       if (!response.ok) {

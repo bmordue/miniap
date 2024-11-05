@@ -90,6 +90,25 @@ describe("postInbox", () => {
 
     consoleSpy.mockRestore();
   });
+
+  it("should sign the outgoing activity", async () => {
+    (getActorFromDB as jest.Mock).mockResolvedValue({
+      id: "https://example.com/users/alice",
+      inbox: aliceInbox,
+    });
+
+    (httpSignature.verifySignature as jest.Mock).mockReturnValue(true);
+
+    (fetch as unknown as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+    });
+
+    await postInbox(req as Request, res as Response);
+
+    expect(httpSignature.sign).toHaveBeenCalled();
+  });
 });
 
 describe("distributeActivity", () => {
