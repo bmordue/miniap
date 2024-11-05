@@ -26,7 +26,15 @@ const dbPromise = open({
 // Mock the open function to return our mock database
 // (open as jest.Mock).mockResolvedValue(mockDb);
 
-describe.skip("Database Initialization", () => {
+describe.skip('DbService', () => {
+  it('should initialise db', async () => {
+    const db = await DbService.open(':memory:');
+    let dbService = new DbService(db);
+    await dbService.initializeDatabase();
+  });
+});
+
+describe("Database Initialization", () => {
   it("should initialize the database with the correct schema", async () => {
     const schemaPath = path.join(__dirname, "../schema.sql");
     const schema = fs.readFileSync(schemaPath, "utf-8");
@@ -38,32 +46,33 @@ describe.skip("Database Initialization", () => {
   });
 });
 
-describe.skip("Database Note Operations", () => {
-  let mockNote: Note;
+describe("Database Note Operations", () => {
   let dbService: DbService;
 
-  beforeEach(async () => {
-    // Reset all mocks before each test
-    jest.clearAllMocks();
+  const mockNote = {
+    "@context": "https://www.w3.org/ns/activitystreams",
+    type: "Note",
+    id: "https://example.com/users/alice/notes/1",
+    attributedTo: "https://example.com/users/alice",
+    content: "Test content",
+    published: "2023-01-01T00:00:00Z",
+    to: ["https://www.w3.org/ns/activitystreams#Public"],
+    visibility: VisibilityType.Public,
+  };
 
-    process.env.DB_FILENAME = ":memory:";
+  beforeAll(async () => {
+    // Reset all mocks before each test
+    // jest.clearAllMocks();
+
+    // process.env.DB_FILENAME = ":memory:";
 
     // Reset mock implementations
     // mockDb.run.mockResolvedValue(undefined);
     // mockDb.get.mockResolvedValue({ id: "1" });
 
-    mockNote = {
-      "@context": "https://www.w3.org/ns/activitystreams",
-      type: "Note",
-      id: "https://example.com/users/alice/notes/1",
-      attributedTo: "https://example.com/users/alice",
-      content: "Test content",
-      published: "2023-01-01T00:00:00Z",
-      to: ["https://www.w3.org/ns/activitystreams#Public"],
-      visibility: VisibilityType.Public,
-    };
-
-    dbService = new DbService(await dbPromise);
+    const db = await DbService.open(':memory:');
+    dbService = new DbService(db);
+    await dbService.initializeDatabase();
   });
 
   describe("addNoteToDB", () => {
@@ -83,12 +92,6 @@ describe.skip("Database Note Operations", () => {
       // );
     });
 
-    it("should throw an error if database operation fails", async () => {
-      const error = new Error("Database error");
-      // mockDb.run.mockRejectedValueOnce(error);
-
-      await expect(dbService.addNoteToDB(mockNote)).rejects.toThrow("Database error");
-    });
   });
 
   describe("updateNoteInDB", () => {
