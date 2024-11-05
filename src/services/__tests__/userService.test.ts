@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import { getUser, getFollowers, getFollowing } from '../userService';
 import { getActorFromDB, getFollowersFromDB, getFollowingFromDB } from '../../dbService';
+import httpSignature from 'http-signature';
 
 jest.mock('../../dbService');
+jest.mock('http-signature');
 
 describe('userService', () => {
   let req: Partial<Request>;
@@ -61,6 +63,26 @@ describe('userService', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
     });
+
+    it('should sign the outgoing activity', async () => {
+      const mockUserData = {
+        "@context": ["https://www.w3.org/ns/activitystreams"],
+        type: "Person",
+        id: "https://example.com/users/alice",
+        preferredUsername: "alice",
+        name: "Alice",
+        inbox: "https://example.com/users/alice/inbox",
+        outbox: "https://example.com/users/alice/outbox",
+        following: "https://example.com/users/alice/following",
+        followers: "https://example.com/users/alice/followers"
+      };
+
+      (getActorFromDB as jest.Mock).mockResolvedValue(mockUserData);
+
+      await getUser(req as Request, res as Response);
+
+      expect(httpSignature.sign).toHaveBeenCalled();
+    });
   });
 
   describe('getFollowers', () => {
@@ -107,6 +129,28 @@ describe('userService', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
     });
+
+    it('should sign the outgoing activity', async () => {
+      const mockFollowersData = {
+        "@context": "https://www.w3.org/ns/activitystreams",
+        type: "OrderedCollection",
+        totalItems: 1,
+        orderedItems: [
+          {
+            type: "Person",
+            id: "https://example.com/users/bob",
+            preferredUsername: "bob",
+            name: "Bob"
+          }
+        ]
+      };
+
+      (getFollowersFromDB as jest.Mock).mockResolvedValue(mockFollowersData);
+
+      await getFollowers(req as Request, res as Response);
+
+      expect(httpSignature.sign).toHaveBeenCalled();
+    });
   });
 
   describe('getFollowing', () => {
@@ -152,6 +196,28 @@ describe('userService', () => {
       expect(getFollowingFromDB).toHaveBeenCalledWith('alice');
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+    });
+
+    it('should sign the outgoing activity', async () => {
+      const mockFollowingData = {
+        "@context": "https://www.w3.org/ns/activitystreams",
+        type: "OrderedCollection",
+        totalItems: 1,
+        orderedItems: [
+          {
+            type: "Person",
+            id: "https://example.com/users/charlie",
+            preferredUsername: "charlie",
+            name: "Charlie"
+          }
+        ]
+      };
+
+      (getFollowingFromDB as jest.Mock).mockResolvedValue(mockFollowingData);
+
+      await getFollowing(req as Request, res as Response);
+
+      expect(httpSignature.sign).toHaveBeenCalled();
     });
   });
 });

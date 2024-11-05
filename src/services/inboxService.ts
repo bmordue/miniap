@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { getActorFromDB, addFollowerToDB } from '../dbService';
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
+import { signActivity } from './utils';
 
 function last(arr :any[]) {
   return arr[arr.length - 1];
@@ -60,13 +61,17 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    const privateKey = '-----BEGIN PRIVATE KEY-----\n...your private key here...\n-----END PRIVATE KEY-----';
+    const keyId = 'https://example.com/keys/1';
+    const signedAcceptActivity = signActivity(acceptActivity, privateKey, keyId);
+
     try {
       const response = await fetch(activity.actor.inbox, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/activity+json'
         },
-        body: JSON.stringify(acceptActivity)
+        body: JSON.stringify(signedAcceptActivity)
       });
 
       if (!response.ok) {

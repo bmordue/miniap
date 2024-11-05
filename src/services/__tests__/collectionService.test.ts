@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
+import httpSignature from "http-signature";
 import { getOutbox, createNote } from "../collectionService";
 import { getOutboxFromDB, addNoteToDB } from "../../dbService";
 
 jest.mock("../../dbService");
+jest.mock("http-signature");
 
 describe("getOutbox", () => {
   let req: Partial<Request>;
@@ -67,6 +69,34 @@ describe("getOutbox", () => {
     expect(getOutboxFromDB).toHaveBeenCalledWith("alice");
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: "Internal server error" });
+  });
+
+  it("should sign the outgoing activity", async () => {
+    const mockOutboxData = {
+      "@context": "https://www.w3.org/ns/activitystreams",
+      type: "OrderedCollection",
+      totalItems: 1,
+      orderedItems: [
+        {
+          "@context": "https://www.w3.org/ns/activitystreams",
+          type: "Create",
+          id: "https://example.com/users/alice/notes/1",
+          actor: "https://example.com/users/alice",
+          published: "2023-01-01T00:00:00Z",
+          to: ["https://www.w3.org/ns/activitystreams#Public"],
+          object: {
+            type: "Note",
+            content: "Hello, World!",
+          },
+        },
+      ],
+    };
+
+    (getOutboxFromDB as jest.Mock).mockResolvedValue(mockOutboxData);
+
+    await getOutbox(req as Request, res as Response);
+
+    expect(httpSignature.sign).toHaveBeenCalled();
   });
 });
 

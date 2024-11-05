@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
+import httpSignature from 'http-signature';
 import { getNote, updateNote, deleteNote } from '../noteService';
 import { getNoteFromDB, updateNoteInDB, deleteNoteFromDB } from '../../dbService';
 
 jest.mock('../../dbService');
+jest.mock('http-signature');
 
 describe('getNote', () => {
   let req: Partial<Request>;
@@ -57,6 +59,24 @@ describe('getNote', () => {
     expect(getNoteFromDB).toHaveBeenCalledWith("alice");
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: "Internal server error" });
+  });
+
+  it('should sign the outgoing activity', async () => {
+    const mockNoteData = {
+      "@context": "https://www.w3.org/ns/activitystreams",
+      type: "Note",
+      id: "https://example.com/users/alice/notes/1",
+      attributedTo: "https://example.com/users/alice",
+      content: "Hello, World!",
+      published: "2023-01-01T00:00:00Z",
+      to: ["https://www.w3.org/ns/activitystreams#Public"],
+    };
+
+    (getNoteFromDB as jest.Mock).mockResolvedValue(mockNoteData);
+
+    await getNote(req as Request, res as Response);
+
+    expect(httpSignature.sign).toHaveBeenCalled();
   });
 });
 
