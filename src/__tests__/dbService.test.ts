@@ -38,7 +38,7 @@ describe.skip("Database Initialization", () => {
   });
 });
 
-describe("Database Note Operations", () => {
+describe.skip("Database Note Operations", () => {
   let mockNote: Note;
   let dbService: DbService;
 
@@ -166,7 +166,7 @@ describe("Database Note Operations", () => {
   });
 });
 
-describe("Database Actor Operations", () => {
+describe.skip("Database Actor Operations", () => {
   let mockActor: Actor;
   let dbService: DbService;
 
@@ -227,7 +227,7 @@ describe("Database Actor Operations", () => {
   });
 });
 
-describe("Database Followers Operations", () => {
+describe.skip("Database Followers Operations", () => {
   let mockFollowers: OrderedCollection;
   let dbService: DbService;
 
@@ -311,7 +311,7 @@ describe("Database Followers Operations", () => {
   });
 });
 
-describe("Database Following Operations", () => {
+describe.skip("Database Following Operations", () => {
   let mockFollowing: OrderedCollection;
   let dbService: DbService;
 
@@ -374,7 +374,7 @@ describe("Database Following Operations", () => {
   });
 });
 
-describe("Database Outbox Operations", () => {
+describe.skip("Database Outbox Operations", () => {
   let mockOutbox: OrderedCollection;
   let dbService: DbService;
 

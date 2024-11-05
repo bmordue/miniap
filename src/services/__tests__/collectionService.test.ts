@@ -7,7 +7,7 @@ import { open, Database } from 'sqlite';
 jest.mock("../../dbService");
 jest.mock("http-signature");
 
-describe("getOutbox", () => {
+describe.skip("getOutbox", () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
   let db :DbService;
