@@ -90,3 +90,11 @@ export type NoteDB = {
   published: string;
   to: string[];
 }
+
+export type ThreadParticipant = {
+  thread_id: string;
+  actor_id: string;
+  last_read_at: string;
+  muted: boolean;
+  created_at: string;
+}

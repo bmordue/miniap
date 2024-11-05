@@ -220,4 +220,44 @@ describe('userService', () => {
       expect(httpSignature.sign).toHaveBeenCalled();
     });
   });
+
+  describe('thread participation tracking', () => {
+    it('should track thread participation', async () => {
+      const mockThreadParticipant = {
+        thread_id: '1',
+        actor_id: 'alice',
+        last_read_at: '2023-01-01T00:00:00Z',
+        muted: false,
+        created_at: '2023-01-01T00:00:00Z'
+      };
+
+      (getThreadParticipantsFromDB as jest.Mock).mockResolvedValue(mockThreadParticipant);
+
+      await getThreadParticipants(req as Request, res as Response);
+
+      expect(getThreadParticipantsFromDB).toHaveBeenCalledWith('1', 'alice');
+      expect(res.json).toHaveBeenCalledWith(mockThreadParticipant);
+    });
+
+    it('should return 404 if thread participant is not found', async () => {
+      (getThreadParticipantsFromDB as jest.Mock).mockResolvedValue(null);
+
+      await getThreadParticipants(req as Request, res as Response);
+
+      expect(getThreadParticipantsFromDB).toHaveBeenCalledWith('1', 'alice');
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Thread participant not found' });
+    });
+
+    it('should return 500 if database throws an error', async () => {
+      const error = new Error('Database connection failed');
+      (getThreadParticipantsFromDB as jest.Mock).mockRejectedValue(error);
+
+      await getThreadParticipants(req as Request, res as Response);
+
+      expect(getThreadParticipantsFromDB).toHaveBeenCalledWith('1', 'alice');
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+    });
+  });
 });
