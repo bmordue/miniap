@@ -10,6 +10,14 @@ export type Actor = {
   name: string;
 }
 
+export type Activity = {
+  "@context": "https://www.w3.org/ns/activitystreams";
+  type: string;
+  actor: string;
+  object: string;
+  to: string[];
+}
+
 export type OrderedCollection = {
   "@context": string;
   type: string;

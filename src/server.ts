@@ -5,7 +5,7 @@ import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
 import { getNote } from './services/noteService';
 import { postInbox } from './services/inboxService';
-import { distributeActivity, notifyFollowers } from './services/inboxService';
+import { distributeActivity } from './services/inboxService';
 
 const app = express();
 
@@ -49,7 +49,7 @@ app.post('/users/:username/inbox', limiter, activityPubHeaders, postInbox);
 
 app.post('/users/:username/distribute', limiter, activityPubHeaders, distributeActivity);
 
-app.post('/users/:username/notify', limiter, activityPubHeaders, notifyFollowers);
+app.post('/users/:username/notify', limiter, activityPubHeaders, distributeActivity);
 
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Server running at http://localhost:${process.env.PORT || 3000}`);

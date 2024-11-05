@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { isValidUrl, postInbox, distributeActivity, handleDeliveryFailure, notifyFollowers } from "../inboxService";
+import { isValidUrl, postInbox, distributeActivity, handleDeliveryFailure } from "../inboxService";
 import { getActorFromDB, getFollowersWithVisibilityFromDB, logDeliveryFailure } from "../../dbService";
 import fetch from "node-fetch";
 import httpSignature from "http-signature";
@@ -86,7 +86,7 @@ describe("postInbox", () => {
     });
 
     await postInbox(req as Request, res as Response);
-    expect(consoleSpy).toHaveBeenLastCalledWith("Accept activity sent successfully:", 200);
+    expect(consoleSpy).toHaveBeenLastCalledWith("Activity sent successfully:", 200);
 
     consoleSpy.mockRestore();
   });
@@ -217,7 +217,7 @@ describe("notifyFollowers", () => {
       statusText: "OK",
     });
 
-    await notifyFollowers(req as Request, res as Response);
+    await distributeActivity(req as Request, res as Response);
 
     expect(fetch).toHaveBeenCalledWith(
       "https://example.com/users/bob/inbox",
@@ -251,7 +251,7 @@ describe("notifyFollowers", () => {
       statusText: "Internal Server Error",
     });
 
-    await notifyFollowers(req as Request, res as Response);
+    await distributeActivity(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });
