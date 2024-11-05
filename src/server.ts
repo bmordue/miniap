@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { json } from 'body-parser';
 import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
-import { getNote, createNote, updateNote, deleteNote } from './services/noteService';
+import { getNote, createNote, updateNote, deleteNote, get_thread_context, create_reply } from './services/noteService';
 import { postInbox } from './services/inboxService';
 
 const app = express();
@@ -51,6 +51,27 @@ app.post('/users/:username/outbox', activityPubHeaders, createNote);
 app.put('/users/:username/notes/:noteId', activityPubHeaders, updateNote);
 
 app.delete('/users/:username/notes/:noteId', activityPubHeaders, deleteNote);
+
+app.get('/api/v1/statuses/:id/context', activityPubHeaders, async (req: Request, res: Response) => {
+  try {
+    const context = await get_thread_context(req.params.id);
+    res.json(context);
+  } catch (error) {
+    console.error('Error fetching thread context:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/v1/statuses/:id/reply', activityPubHeaders, async (req: Request, res: Response) => {
+  try {
+    const activity = await create_reply(req.body.content, req.params.id);
+    const reply_id = await addNoteToDB(activity);
+    res.status(201).json(await getNoteFromDB(reply_id));
+  } catch (error) {
+    console.error('Error creating reply:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Server running at http://localhost:${process.env.PORT || 3000}`);
