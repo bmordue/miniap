@@ -45,6 +45,25 @@ export type Create = {
   to: string[];
 }
 
+export type Update = {
+  "@context": string;
+  type: string;
+  id: string;
+  actor: string;
+  published: string;
+  object: Note;
+  to: string[];
+}
+
+export type Delete = {
+  "@context": string;
+  type: string;
+  id: string;
+  actor: string;
+  published: string;
+  to: string[];
+}
+
 // Database schema definitions
 
 export type ActorDB = {

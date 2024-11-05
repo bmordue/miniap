@@ -79,3 +79,24 @@ export const getDeliveryFailures = async (username: string): Promise<DeliveryFai
   }
   return res;
 };
+
+export const addNoteToDB = async (note: Note): Promise<void> => {
+  const db = await dbPromise;
+  await db.run(
+    'INSERT INTO notes (id, attributedTo, content, published, to) VALUES (?, ?, ?, ?, ?)',
+    [note.id, note.attributedTo, note.content, note.published, JSON.stringify(note.to)]
+  );
+};
+
+export const updateNoteInDB = async (note: Note): Promise<void> => {
+  const db = await dbPromise;
+  await db.run(
+    'UPDATE notes SET content = ?, published = ?, to = ? WHERE id = ?',
+    [note.content, note.published, JSON.stringify(note.to), note.id]
+  );
+};
+
+export const deleteNoteFromDB = async (noteId: string): Promise<void> => {
+  const db = await dbPromise;
+  await db.run('DELETE FROM notes WHERE id = ?', [noteId]);
+};

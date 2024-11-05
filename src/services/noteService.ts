@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getNoteFromDB } from '../dbService';
+import { getNoteFromDB, updateNoteInDB, deleteNoteFromDB, addNoteToDB } from '../dbService';
 
 export const getNote = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;
@@ -12,6 +12,42 @@ export const getNote = async (req: Request, res: Response): Promise<void> => {
     res.json(note);
   } catch (error) {
     console.error('Error fetching note from database:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const createNote = async (req: Request, res: Response): Promise<void> => {
+  const note = req.body;
+  try {
+    await addNoteToDB(note);
+    res.status(201).json(note);
+  } catch (error) {
+    console.error('Error adding note to database:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }  
+}
+
+export const updateNote = async (req: Request, res: Response): Promise<void> => {
+  const noteId = req.params.noteId;
+  const note = req.body;
+
+  try {
+    await updateNoteInDB(note);
+    res.status(200).json(note);
+  } catch (error) {
+    console.error('Error updating note in database:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const deleteNote = async (req: Request, res: Response): Promise<void> => {
+  const noteId = req.params.noteId;
+
+  try {
+    await deleteNoteFromDB(noteId);
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error deleting note from database:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

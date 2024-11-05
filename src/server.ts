@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { json } from 'body-parser';
 import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
-import { getNote } from './services/noteService';
+import { getNote, createNote, updateNote, deleteNote } from './services/noteService';
 import { postInbox } from './services/inboxService';
 import { distributeActivity } from './services/inboxService';
 
@@ -47,9 +47,13 @@ app.get('/users/:username/notes/1', activityPubHeaders, getNote);
 
 app.post('/users/:username/inbox', limiter, activityPubHeaders, postInbox);
 
-app.post('/users/:username/distribute', limiter, activityPubHeaders, distributeActivity);
-
 app.post('/users/:username/notify', limiter, activityPubHeaders, distributeActivity);
+
+app.post('/users/:username/outbox', activityPubHeaders, createNote);
+
+app.put('/users/:username/notes/:noteId', activityPubHeaders, updateNote);
+
+app.delete('/users/:username/notes/:noteId', activityPubHeaders, deleteNote);
 
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Server running at http://localhost:${process.env.PORT || 3000}`);
