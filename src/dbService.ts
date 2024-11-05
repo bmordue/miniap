@@ -1,6 +1,7 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
-import { Actor, OrderedCollection, Note } from './types';
+
+import { Actor, OrderedCollection, Note, VisibilityType } from './types';
 import fs from 'fs';
 import path from 'path';
 
@@ -73,16 +74,16 @@ export const addFollowerToDB = async (username: string, follower: string): Promi
 export const addNoteToDB = async (note: Note): Promise<void> => {
   const db = await dbPromise;
   await db.run(
-    'INSERT INTO notes (id, attributedTo, content, published, to) VALUES (?, ?, ?, ?, ?)',
-    [note.id, note.attributedTo, note.content, note.published, JSON.stringify(note.to)]
+    'INSERT INTO notes (id, attributedTo, content, published, to, visibility) VALUES (?, ?, ?, ?, ?, ?)',
+    [note.id, note.attributedTo, note.content, note.published, JSON.stringify(note.to), note.visibility]
   );
 };
 
 export const updateNoteInDB = async (note: Note): Promise<void> => {
   const db = await dbPromise;
   await db.run(
-    'UPDATE notes SET content = ?, published = ?, to = ? WHERE id = ?',
-    [note.content, note.published, JSON.stringify(note.to), note.id]
+    'UPDATE notes SET content = ?, published = ?, to = ?, visibility = ? WHERE id = ?',
+    [note.content, note.published, JSON.stringify(note.to), note.visibility, note.id]
   );
 };
 
