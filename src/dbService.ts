@@ -1,10 +1,23 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { Actor, OrderedCollection, Note } from './types';
+import fs from 'fs';
+import path from 'path';
 
 const dbPromise = open({
   filename: process.env.DB_FILENAME || 'activitypub.db',
   driver: sqlite3.Database
+});
+
+const initializeDatabase = async (): Promise<void> => {
+  const db = await dbPromise;
+  const schemaPath = path.join(__dirname, 'schema.sql');
+  const schema = fs.readFileSync(schemaPath, 'utf-8');
+  await db.exec(schema);
+};
+
+initializeDatabase().catch((error) => {
+  console.error('Error initializing database:', error);
 });
 
 export const getActorFromDB = async (username: string): Promise<Actor | null> => {
