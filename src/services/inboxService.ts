@@ -1,11 +1,32 @@
 import { Request, Response } from 'express';
-import { getActorFromDB, addFollowerToDB } from '../dbService';
+import { getActorFromDB, addFollowerToDB, getFollowersWithVisibilityFromDB, logDeliveryFailure } from '../dbService';
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
+import { Activity, FollowerWithVisibility } from '../types';
 import { signActivity } from './utils';
 
 function last(arr :any[]) {
   return arr[arr.length - 1];
+}
+
+async function postActivity(url: fetch.RequestInfo, activity: Activity) {
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/activity+json",
+      },
+      body: JSON.stringify(activity),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to send activity:", response.statusText);
+    } else {
+      console.log("Activity sent successfully:", response.status);
+    }
+  } catch (error) {
+    console.error("Error sending activity:", error);
+  }
 }
 
 export function isValidUrl(url: string): boolean {
@@ -48,7 +69,7 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
 
   if (activity.type === 'Follow') {
     // Respond with an Accept activity
-    const acceptActivity = {
+    const acceptActivity :Activity = {
       "@context": "https://www.w3.org/ns/activitystreams",
       type: "Accept",
       actor: actor.id,
@@ -61,12 +82,24 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    await postActivity(activity.actor.inbox, acceptActivity);
+
+    // TODO: shouldn't add to followers collection if postActivity failed?
+    // Update the followers collection
+    await addFollowerToDB(username, activity.actor);
+  }
+
+  res.status(200).json({ status: 'ok' });
+};
+
+async function notifyFollower(username :string, follower: FollowerWithVisibility, activity :Activity) {
+  if (activity.to.includes(follower.visibility)) {
     const privateKey = '-----BEGIN PRIVATE KEY-----\n...your private key here...\n-----END PRIVATE KEY-----';
     const keyId = 'https://example.com/keys/1';
-    const signedAcceptActivity = signActivity(acceptActivity, privateKey, keyId);
+    const signedAcceptActivity = signActivity(activity, privateKey, keyId);
 
     try {
-      const response = await fetch(activity.actor.inbox, {
+      const response = await fetch(follower.inbox, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/activity+json'
@@ -75,17 +108,39 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
       });
 
       if (!response.ok) {
-        console.error('Failed to send Accept activity:', response.statusText);
-      } else {
-        console.log('Accept activity sent successfully:', response.status);
+        throw new Error(`Failed to deliver activity to ${follower.inbox}: ${response.statusText}`);
       }
-    } catch (error) {
-      console.error('Error sending Accept activity:', error);
+    } catch (error :any) {
+      await handleDeliveryFailure(username, JSON.stringify(activity), error.message);
+    }
+  }
+}
+
+export async function distributeActivity(req: Request, res: Response): Promise<void> {
+  const username = req.params.username;
+  const activity = req.body;
+
+  try {
+    const followers = await getFollowersWithVisibilityFromDB(username);
+    if (!followers) {
+      res.status(404).json({ error: 'Followers not found' });
+      return;
     }
 
-    // Update the followers collection
-    await addFollowerToDB(username, activity.actor);
-  }
+    const deliveryPromises = followers.map(f => notifyFollower(username, f, activity));
 
-  res.status(200).json({ status: 'ok' });
+    await Promise.all(deliveryPromises);
+    res.status(200).json({ status: 'ok' });
+  } catch (error) {
+    console.error('Error distributing activity:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export async function handleDeliveryFailure(username: string, serialisedActivity: string, error: string): Promise<void> {
+  try {
+    await logDeliveryFailure(username, serialisedActivity, error);
+  } catch (logError) {
+    console.error('Error logging delivery failure:', logError);
+  }
 };
