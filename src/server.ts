@@ -4,8 +4,7 @@ import { json } from 'body-parser';
 import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
 import { getNote, createNote, updateNote, deleteNote } from './services/noteService';
-import { postInbox } from './services/inboxService';
-import { distributeActivity } from './services/inboxService';
+import { postInbox, distributeActivity } from './services/inboxService';
 
 const app = express();
 

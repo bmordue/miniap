@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { isValidUrl, postInbox, distributeActivity, handleDeliveryFailure } from "../inboxService";
-import { getActorFromDB, getFollowersWithVisibilityFromDB, logDeliveryFailure } from "../../dbService";
+import { isValidUrl, postInbox, distributeActivity } from "../inboxService";
+import { getActorFromDB, getFollowersWithVisibilityFromDB } from "../../dbService";
 import fetch from "node-fetch";
 import httpSignature from "http-signature";
 

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { getActorFromDB, addFollowerToDB, getFollowersWithVisibilityFromDB, logDeliveryFailure } from '../dbService';
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
-import { Activity, FollowerWithVisibility, Note } from '../types';
+import { Activity, FollowerWithVisibility } from '../types';
 import { signActivity } from './utils';
 
 function last(arr :any[]) {
