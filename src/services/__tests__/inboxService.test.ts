@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import { isValidUrl, postInbox } from "../inboxService";
-import { getActorFromDB } from "../../dbService";
 import fetch from "node-fetch";
 import httpSignature from "http-signature";
+import { open, Database } from 'sqlite';
+import DbService from "../../dbService";
 
 jest.mock("../../dbService");
 jest.mock("node-fetch");
@@ -13,9 +14,14 @@ const aliceInbox = "https://example.com/users/alice/inbox";
 describe("postInbox", () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
+  let db: DbService;
 
-  beforeEach(() => {
-    process.env.DB_FILENAME = ":memory:";
+  beforeEach(async () => {
+    const dbPromise = open({
+      filename: ':memory:',
+      driver: Database
+    });
+    db = new DbService(await dbPromise);
     req = {
       params: { username: "alice" },
       body: {
@@ -39,7 +45,7 @@ describe("postInbox", () => {
   });
 
   it("should send an Accept activity in response to a Follow activity", async () => {
-    (getActorFromDB as jest.Mock).mockResolvedValue({
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
       id: "https://example.com/users/alice",
       inbox: aliceInbox,
     });
@@ -70,7 +76,7 @@ describe("postInbox", () => {
   });
 
   it("should log the response status of the Accept activity", async () => {
-    (getActorFromDB as jest.Mock).mockResolvedValue({
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
       id: "https://example.com/users/alice",
       inbox: "https://example.com/users/alice/inbox",
     });
@@ -92,7 +98,7 @@ describe("postInbox", () => {
   });
 
   it("should sign the outgoing activity", async () => {
-    (getActorFromDB as jest.Mock).mockResolvedValue({
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
       id: "https://example.com/users/alice",
       inbox: aliceInbox,
     });
