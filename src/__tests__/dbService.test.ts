@@ -6,7 +6,7 @@ import {
   deleteNoteFromDB,
   getNoteFromDB,
 } from "../dbService";
-import { Note } from "../types";
+import { Note, VisibilityType } from "../types";
 
 // Mock the database modules
 jest.mock("sqlite3");
@@ -44,6 +44,7 @@ describe.skip("Database Note Operations", () => {
       content: "Test content",
       published: "2023-01-01T00:00:00Z",
       to: ["https://www.w3.org/ns/activitystreams#Public"],
+      visibility: VisibilityType.Public,
     };
   });
 
@@ -52,13 +53,14 @@ describe.skip("Database Note Operations", () => {
       await addNoteToDB(mockNote);
 
       expect(mockDb.run).toHaveBeenCalledWith(
-        "INSERT INTO notes (id, attributedTo, content, published, to) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO notes (id, attributedTo, content, published, to, visibility) VALUES (?, ?, ?, ?, ?, ?)",
         [
           mockNote.id,
           mockNote.attributedTo,
           mockNote.content,
           mockNote.published,
           JSON.stringify(mockNote.to),
+          mockNote.visibility,
         ],
       );
     });
@@ -76,11 +78,12 @@ describe.skip("Database Note Operations", () => {
       await updateNoteInDB(mockNote);
 
       expect(mockDb.run).toHaveBeenCalledWith(
-        "UPDATE notes SET content = ?, published = ?, to = ? WHERE id = ?",
+        "UPDATE notes SET content = ?, published = ?, to = ?, visibility = ? WHERE id = ?",
         [
           mockNote.content,
           mockNote.published,
           JSON.stringify(mockNote.to),
+          mockNote.visibility,
           mockNote.id,
         ],
       );

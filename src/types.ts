@@ -33,6 +33,7 @@ export type Note = {
   content: string;
   published: string;
   to: string[];
+  visibility: VisibilityType;
 }
 
 export type Create = {
@@ -97,6 +98,14 @@ export type NoteDB = {
   content: string;
   published: string;
   to: string[];
+  visibility: VisibilityType;
+}
+
+export enum VisibilityType {
+  Public = 'public',
+  Unlisted = 'unlisted',
+  Followers = 'followers',
+  Direct = 'direct'
 }
 
 export type FollowerWithVisibility = {
