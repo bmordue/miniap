@@ -77,3 +77,31 @@ export const deleteNoteFromDB = async (noteId: string): Promise<void> => {
   const db = await dbPromise;
   await db.run('DELETE FROM notes WHERE id = ?', [noteId]);
 };
+
+// Add likes table
+export const addLikeToDB = async (actorId: string, objectId: string, activityId: string): Promise<void> => {
+  const db = await dbPromise;
+  await db.run(
+    'INSERT INTO likes (id, actor_id, object_id, activity_id, created_at) VALUES (?, ?, ?, ?, ?)',
+    [activityId, actorId, objectId, activityId, new Date().toISOString()]
+  );
+};
+
+export const removeLikeFromDB = async (actorId: string, objectId: string): Promise<void> => {
+  const db = await dbPromise;
+  await db.run('DELETE FROM likes WHERE actor_id = ? AND object_id = ?', [actorId, objectId]);
+};
+
+// Add announces table
+export const addAnnounceToDB = async (actorId: string, objectId: string, activityId: string): Promise<void> => {
+  const db = await dbPromise;
+  await db.run(
+    'INSERT INTO announces (id, actor_id, object_id, activity_id, created_at) VALUES (?, ?, ?, ?, ?)',
+    [activityId, actorId, objectId, activityId, new Date().toISOString()]
+  );
+};
+
+export const removeAnnounceFromDB = async (actorId: string, objectId: string): Promise<void> => {
+  const db = await dbPromise;
+  await db.run('DELETE FROM announces WHERE actor_id = ? AND object_id = ?', [actorId, objectId]);
+};

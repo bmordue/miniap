@@ -5,6 +5,7 @@ import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
 import { getNote, createNote, updateNote, deleteNote } from './services/noteService';
 import { postInbox } from './services/inboxService';
+import { postLike, postAnnounce, postUndo } from './services/activityService';
 
 const app = express();
 
@@ -51,6 +52,12 @@ app.post('/users/:username/outbox', activityPubHeaders, createNote);
 app.put('/users/:username/notes/:noteId', activityPubHeaders, updateNote);
 
 app.delete('/users/:username/notes/:noteId', activityPubHeaders, deleteNote);
+
+app.post('/users/:username/likes', activityPubHeaders, postLike);
+
+app.post('/users/:username/announces', activityPubHeaders, postAnnounce);
+
+app.post('/users/:username/undo', activityPubHeaders, postUndo);
 
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Server running at http://localhost:${process.env.PORT || 3000}`);

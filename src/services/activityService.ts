@@ -1,40 +1,5 @@
 import { Request, Response } from 'express';
-import { getOutboxFromDB, addNoteToDB, addLikeToDB, addAnnounceToDB, removeLikeFromDB, removeAnnounceFromDB } from '../dbService';
-import { Note } from '../types';
-import { signActivity } from './utils';
-
-export const getOutbox = async (req: Request, res: Response): Promise<void> => {
-  const username = req.params.username;
-  try {
-    const outboxCollection = await getOutboxFromDB(username);
-    if (!outboxCollection) {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
-
-    const privateKey = '-----BEGIN PRIVATE KEY-----\n...your private key here...\n-----END PRIVATE KEY-----';
-    const keyId = 'https://example.com/keys/1';
-    const signedOutboxCollection = signActivity(outboxCollection, privateKey, keyId);
-
-    res.json(signedOutboxCollection);
-  } catch (error) {
-    console.error('Error fetching outbox from database:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-export const createNote = async (req: Request, res: Response): Promise<void> => {
-  const username = req.params.username;
-  const note: Note = req.body;
-
-  try {
-    await addNoteToDB(note);
-    res.status(201).json(note);
-  } catch (error) {
-    console.error('Error creating note in database:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
+import { addLikeToDB, removeLikeFromDB, addAnnounceToDB, removeAnnounceFromDB } from '../dbService';
 
 export const postLike = async (req: Request, res: Response): Promise<void> => {
   const { actor, object, id } = req.body;

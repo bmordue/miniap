@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getActorFromDB, addFollowerToDB } from '../dbService';
+import { getActorFromDB, addFollowerToDB, addLikeToDB, removeLikeFromDB, addAnnounceToDB, removeAnnounceFromDB } from '../dbService';
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
 import { signActivity } from './utils';
@@ -85,6 +85,17 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
 
     // Update the followers collection
     await addFollowerToDB(username, activity.actor);
+  } else if (activity.type === 'Like') {
+    await addLikeToDB(activity.actor, activity.object, activity.id);
+  } else if (activity.type === 'Announce') {
+    await addAnnounceToDB(activity.actor, activity.object, activity.id);
+  } else if (activity.type === 'Undo') {
+    const targetActivity = activity.object;
+    if (targetActivity.type === 'Like') {
+      await removeLikeFromDB(targetActivity.actor, targetActivity.object);
+    } else if (targetActivity.type === 'Announce') {
+      await removeAnnounceFromDB(targetActivity.actor, targetActivity.object);
+    }
   }
 
   res.status(200).json({ status: 'ok' });
