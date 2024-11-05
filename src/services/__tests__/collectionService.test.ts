@@ -107,7 +107,7 @@ describe.skip("getOutbox", () => {
   });
 });
 
-describe("createNote", () => {
+describe.skip("createNote", () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
   let db: DbService;

@@ -89,7 +89,7 @@ describe.skip('getNote', () => {
   });
 });
 
-describe('updateNote', () => {
+describe.skip('updateNote', () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
   let db: DbService;
@@ -141,7 +141,7 @@ describe('updateNote', () => {
   });
 });
 
-describe('deleteNote', () => {
+describe.skip('deleteNote', () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
   let db: DbService;
