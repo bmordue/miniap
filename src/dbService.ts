@@ -1,6 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
-import { Actor, OrderedCollection, Note } from './types';
+import { Actor, OrderedCollection, Note, VisibilityType } from './types';
 import fs from 'fs';
 import path from 'path';
 
@@ -66,15 +66,15 @@ class DbService {
 
   public async addNoteToDB(note: Note): Promise<void> {
     await this.db.run(
-      'INSERT INTO notes (id, attributedTo, content, published, to) VALUES (?, ?, ?, ?, ?)',
-      [note.id, note.attributedTo, note.content, note.published, JSON.stringify(note.to)]
+      'INSERT INTO notes (id, attributedTo, content, published, to, visibility) VALUES (?, ?, ?, ?, ?, ?)',
+    [note.id, note.attributedTo, note.content, note.published, JSON.stringify(note.to), note.visibility]
     );
   }
 
   public async updateNoteInDB(note: Note): Promise<void> {
     await this.db.run(
-      'UPDATE notes SET content = ?, published = ?, to = ? WHERE id = ?',
-      [note.content, note.published, JSON.stringify(note.to), note.id]
+      'UPDATE notes SET content = ?, published = ?, to = ?, visibility = ? WHERE id = ?',
+    [note.content, note.published, JSON.stringify(note.to), note.visibility, note.id]
     );
   }
 

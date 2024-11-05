@@ -30,6 +30,7 @@ describe('getNote', () => {
       content: "Hello, World!",
       published: "2023-01-01T00:00:00Z",
       to: ["https://www.w3.org/ns/activitystreams#Public"],
+      visibility: "public",
     };
 
     (getNoteFromDB as jest.Mock).mockResolvedValue(mockNoteData);
@@ -70,6 +71,7 @@ describe('getNote', () => {
       content: "Hello, World!",
       published: "2023-01-01T00:00:00Z",
       to: ["https://www.w3.org/ns/activitystreams#Public"],
+      visibility: "public",
     };
 
     (getNoteFromDB as jest.Mock).mockResolvedValue(mockNoteData);
@@ -96,6 +98,7 @@ describe('updateNote', () => {
         content: "Updated content",
         published: "2023-01-01T00:00:00Z",
         to: ["https://www.w3.org/ns/activitystreams#Public"],
+        visibility: "public",
       },
     };
     res = {

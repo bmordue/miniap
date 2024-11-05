@@ -1,9 +1,16 @@
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
+
 import DbService from "../dbService";
-import { Note, Actor, OrderedCollection } from "../types";
+import { Note, Actor, OrderedCollection, VisibilityType } from "../types";
 import fs from "fs";
 import path from "path";
+import {
+  addNoteToDB,
+  updateNoteInDB,
+  deleteNoteFromDB,
+  getNoteFromDB,
+} from "../dbService";
 
 // Mock the database modules
 jest.mock("sqlite3");
@@ -55,6 +62,7 @@ describe("Database Note Operations", () => {
       content: "Test content",
       published: "2023-01-01T00:00:00Z",
       to: ["https://www.w3.org/ns/activitystreams#Public"],
+      visibility: VisibilityType.Public,
     };
 
     dbService = new DbService();
@@ -65,13 +73,14 @@ describe("Database Note Operations", () => {
       await dbService.addNoteToDB(mockNote);
 
       expect(mockDb.run).toHaveBeenCalledWith(
-        "INSERT INTO notes (id, attributedTo, content, published, to) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO notes (id, attributedTo, content, published, to, visibility) VALUES (?, ?, ?, ?, ?, ?)",
         [
           mockNote.id,
           mockNote.attributedTo,
           mockNote.content,
           mockNote.published,
           JSON.stringify(mockNote.to),
+          mockNote.visibility,
         ],
       );
     });
@@ -89,11 +98,12 @@ describe("Database Note Operations", () => {
       await dbService.updateNoteInDB(mockNote);
 
       expect(mockDb.run).toHaveBeenCalledWith(
-        "UPDATE notes SET content = ?, published = ?, to = ? WHERE id = ?",
+        "UPDATE notes SET content = ?, published = ?, to = ?, visibility = ? WHERE id = ?",
         [
           mockNote.content,
           mockNote.published,
           JSON.stringify(mockNote.to),
+          mockNote.visibility,
           mockNote.id,
         ],
       );
