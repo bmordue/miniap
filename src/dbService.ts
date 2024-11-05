@@ -66,10 +66,10 @@ export const getFollowersWithVisibilityFromDB = async (username: string): Promis
   return res;
 };
 
-export const logDeliveryFailure = async (username: string, activityId: string, error: string): Promise<void> => {
+export async function logDeliveryFailure(username: string, activityId: string, error: string): Promise<void> {
   const db = await dbPromise;
   await db.run('INSERT INTO delivery_failures (username, activityId, error) VALUES (?, ?, ?)', [username, activityId, error]);
-};
+}
 
 export const getDeliveryFailures = async (username: string): Promise<DeliveryFailure[] | null> => {
   const db = await dbPromise;

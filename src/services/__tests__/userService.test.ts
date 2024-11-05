@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getUser, getFollowers, getFollowing, getFollowersWithVisibility, logDeliveryFailure, getDeliveryFailures } from '../userService';
+import { getUser, getFollowers, getFollowing, getFollowersWithVisibility, storeAndLogDeliveryFailure, retrieveDeliveryFailures } from '../userService';
 import { getActorFromDB, getFollowersFromDB, getFollowingFromDB, getFollowersWithVisibilityFromDB, logDeliveryFailure as logDeliveryFailureDB, getDeliveryFailures as getDeliveryFailuresDB } from '../../dbService';
 
 jest.mock('../../dbService');
@@ -205,7 +205,7 @@ describe('userService', () => {
 
       req.body = mockRequestBody;
 
-      await logDeliveryFailure(req as Request, res as Response);
+      await storeAndLogDeliveryFailure(req as Request, res as Response);
 
       expect(logDeliveryFailureDB).toHaveBeenCalledWith('alice', 'activity123', 'Failed to deliver activity');
       expect(res.status).toHaveBeenCalledWith(200);
@@ -224,7 +224,7 @@ describe('userService', () => {
       const error = new Error('Database connection failed');
       (logDeliveryFailureDB as jest.Mock).mockRejectedValue(error);
 
-      await logDeliveryFailure(req as Request, res as Response);
+      await storeAndLogDeliveryFailure(req as Request, res as Response);
 
       expect(logDeliveryFailureDB).toHaveBeenCalledWith('alice', 'activity123', 'Failed to deliver activity');
       expect(res.status).toHaveBeenCalledWith(500);
@@ -244,7 +244,7 @@ describe('userService', () => {
 
       (getDeliveryFailuresDB as jest.Mock).mockResolvedValue(mockDeliveryFailuresData);
 
-      await getDeliveryFailures(req as Request, res as Response);
+      await retrieveDeliveryFailures(req as Request, res as Response);
 
       expect(getDeliveryFailuresDB).toHaveBeenCalledWith('alice');
       expect(res.json).toHaveBeenCalledWith(mockDeliveryFailuresData);
@@ -253,7 +253,7 @@ describe('userService', () => {
     it('should return 404 if delivery failures are not found', async () => {
       (getDeliveryFailuresDB as jest.Mock).mockResolvedValue(null);
 
-      await getDeliveryFailures(req as Request, res as Response);
+      await retrieveDeliveryFailures(req as Request, res as Response);
 
       expect(getDeliveryFailuresDB).toHaveBeenCalledWith('alice');
       expect(res.status).toHaveBeenCalledWith(404);
@@ -264,7 +264,7 @@ describe('userService', () => {
       const error = new Error('Database connection failed');
       (getDeliveryFailuresDB as jest.Mock).mockRejectedValue(error);
 
-      await getDeliveryFailures(req as Request, res as Response);
+      await retrieveDeliveryFailures(req as Request, res as Response);
 
       expect(getDeliveryFailuresDB).toHaveBeenCalledWith('alice');
       expect(res.status).toHaveBeenCalledWith(500);

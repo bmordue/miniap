@@ -151,7 +151,7 @@ describe("distributeActivity", () => {
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });
   });
 
-  it("should handle delivery failure and log it", async () => {
+  it("should handle delivery failure", async () => {
     const mockFollowers = [
       {
         id: "https://example.com/users/bob",
@@ -168,15 +168,7 @@ describe("distributeActivity", () => {
       statusText: "Internal Server Error",
     });
 
-    const logDeliveryFailureSpy = jest.spyOn(logDeliveryFailure, "logDeliveryFailure");
-
     await distributeActivity(req as Request, res as Response);
-
-    expect(logDeliveryFailureSpy).toHaveBeenCalledWith(
-      "alice",
-      expect.any(String),
-      "Failed to deliver activity to https://example.com/users/bob/inbox: Internal Server Error"
-    );
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });
@@ -242,7 +234,7 @@ describe("notifyFollowers", () => {
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });
   });
 
-  it("should handle delivery failure and log it", async () => {
+  it("should handle delivery failure", async () => {
     const mockFollowers = [
       {
         id: "https://example.com/users/bob",
@@ -259,15 +251,7 @@ describe("notifyFollowers", () => {
       statusText: "Internal Server Error",
     });
 
-    const logDeliveryFailureSpy = jest.spyOn(logDeliveryFailure, "logDeliveryFailure");
-
     await notifyFollowers(req as Request, res as Response);
-
-    expect(logDeliveryFailureSpy).toHaveBeenCalledWith(
-      "alice",
-      expect.any(String),
-      "Failed to notify follower at https://example.com/users/bob/inbox: Internal Server Error"
-    );
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });

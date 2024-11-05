@@ -61,7 +61,7 @@ export const getFollowersWithVisibility = async (req: Request, res: Response): P
   }
 };
 
-export const logDeliveryFailure = async (req: Request, res: Response): Promise<void> => {
+export const storeAndLogDeliveryFailure = async (req: Request, res: Response): Promise<void> => {
   const { username, activityId, error } = req.body;
   try {
     await logDeliveryFailure(username, activityId, error);
@@ -72,7 +72,7 @@ export const logDeliveryFailure = async (req: Request, res: Response): Promise<v
   }
 };
 
-export const getDeliveryFailures = async (req: Request, res: Response): Promise<void> => {
+export const retrieveDeliveryFailures = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;
   try {
     const deliveryFailures = await getDeliveryFailures(username);

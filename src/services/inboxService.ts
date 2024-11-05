@@ -111,7 +111,7 @@ export async function distributeActivity(req: Request, res: Response): Promise<v
           if (!response.ok) {
             throw new Error(`Failed to deliver activity to ${follower.inbox}: ${response.statusText}`);
           }
-        } catch (error) {
+        } catch (error :any) {
           await handleDeliveryFailure(username, activity.id, error.message);
         }
       }
@@ -158,7 +158,7 @@ export async function notifyFollowers(req: Request, res: Response): Promise<void
           if (!response.ok) {
             throw new Error(`Failed to notify follower at ${follower.inbox}: ${response.statusText}`);
           }
-        } catch (error) {
+        } catch (error :any) {
           await handleDeliveryFailure(username, activity.id, error.message);
         }
       }
