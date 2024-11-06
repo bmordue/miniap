@@ -59,12 +59,8 @@ class DbService {
     return res;
   }
 
-  public async getNoteFromDB(username: string): Promise<Note | null> {
-    const res = await this.db.get('SELECT * FROM notes WHERE username = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+  public async getNoteFromDB(username: string): Promise<Note | null | undefined> {
+    return await this.db.get('SELECT * FROM notes WHERE attributedTo = ?', [username]);
   }
 
   public async addFollowerToDB(username: string, follower: string): Promise<void> {
