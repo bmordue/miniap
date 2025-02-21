@@ -21,43 +21,23 @@ class DbService {
   }
 
   public async getActorFromDB(username: string): Promise<Actor | null> {
-    const res = await this.db.get('SELECT * FROM actors WHERE preferredUsername = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+    return await this.db.get('SELECT * FROM actors WHERE preferredUsername = ?', [username]);
   }
 
   public async getFollowersFromDB(username: string): Promise<OrderedCollection | null> {
-    const res = await this.db.get('SELECT * FROM followers WHERE username = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+    return await this.db.get('SELECT * FROM followers WHERE username = ?', [username]);
   }
 
   public async getFollowingFromDB(username: string): Promise<OrderedCollection | null> {
-    const res = await this.db.get('SELECT * FROM following WHERE username = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+    return await this.db.get('SELECT * FROM following WHERE username = ?', [username]);
   }
 
   public async getOutboxFromDB(username: string): Promise<OrderedCollection | null> {
-    const res = await this.db.get('SELECT * FROM outbox WHERE username = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+    return await this.db.get('SELECT * FROM outbox WHERE username = ?', [username]);
   }
 
   public async getNoteFromDB(username: string): Promise<Note | null> {
-    const res = await this.db.get('SELECT * FROM notes WHERE username = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+    return await this.db.get('SELECT * FROM notes WHERE username = ?', [username]);
   }
 
   public async addFollowerToDB(username: string, follower: string): Promise<void> {
@@ -65,23 +45,16 @@ class DbService {
   }
 
   public async getFollowersWithVisibilityFromDB (username: string): Promise<FollowerWithVisibility[] | null> {
-    const db = await dbPromise;
-    return await db.all('SELECT * FROM followers WHERE username = ?', [username]);
+    return await this.db.all('SELECT * FROM followers WHERE username = ?', [username]);
   }
 
-export async function logDeliveryFailure(username: string, serialisedActivity: string, error: string): Promise<void> {
-  const db = await dbPromise;
-  await db.run('INSERT INTO delivery_failures (username, activityId, error) VALUES (?, ?, ?)', [username, serialisedActivity, error]);
-}
-
-export const getDeliveryFailures = async (username: string): Promise<DeliveryFailure[] | null> => {
-  const db = await dbPromise;
-  const res = await db.all('SELECT * FROM delivery_failures WHERE username = ?', [username]);
-  if (!res) {
-    return null;
+  public async function logDeliveryFailure(username: string, serialisedActivity: string, error: string): Promise<void> {
+    await this.db.run('INSERT INTO delivery_failures (username, activityId, error) VALUES (?, ?, ?)', [username, serialisedActivity, error]);
   }
-  return res;
-};
+
+  public async getDeliveryFailures(username: string): Promise<DeliveryFailure[] | null> {
+    return await this.db.all('SELECT * FROM delivery_failures WHERE username = ?', [username]);
+  }
 
   public async addNoteToDB(note: Note): Promise<void> {
     await this.db.run(
