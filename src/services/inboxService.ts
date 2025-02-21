@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { getActorFromDB, addFollowerToDB, getFollowersWithVisibilityFromDB, logDeliveryFailure } from '../dbService';
+import { open, Database } from 'sqlite';
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
 import { Activity, FollowerWithVisibility } from '../types';
@@ -60,7 +61,11 @@ export async function postInbox(req: Request, res: Response): Promise<void> {
   }
 
   const username = req.params.username;
-  const actor = await getActorFromDB(username);
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
+  const actor = await dbService.getActorFromDB(username);
 
   if (!actor) {
     res.status(404).json({ error: 'User not found' });

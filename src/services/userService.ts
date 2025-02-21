@@ -1,11 +1,16 @@
 import { Request, Response } from 'express';
 import { getActorFromDB, getFollowersFromDB, getFollowingFromDB, getFollowersWithVisibilityFromDB, logDeliveryFailure, getDeliveryFailures } from '../dbService';
 import { signActivity } from './utils';
+import { open, Database } from 'sqlite';
 
 export const getUser = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;
   try {
-    const actor = await getActorFromDB(username);
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+    const actor = dbService.getActorFromDB(username);
     if (!actor) {
       res.status(404).json({ error: 'User not found' });
       return;
@@ -25,7 +30,11 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
 export const getFollowers = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;
   try {
-    const followersCollection = await getFollowersFromDB(username);
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+    const followersCollection = await dbService.getFollowersFromDB(username);
     if (!followersCollection) {
       res.status(404).json({ error: 'User not found' });
       return;
@@ -45,7 +54,11 @@ export const getFollowers = async (req: Request, res: Response): Promise<void> =
 export const getFollowing = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;
   try {
-    const followingCollection = await getFollowingFromDB(username);
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+    const followingCollection = await dbService.getFollowingFromDB(username);
     if (!followingCollection) {
       res.status(404).json({ error: 'User not found' });
       return;
