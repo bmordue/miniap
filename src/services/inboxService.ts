@@ -33,7 +33,10 @@ export function isValidUrl(url: string): boolean {
   const allowedDomains = ['example.com', 'another-allowed-domain.com'];
   try {
     const parsedUrl = new URL(url);
-    return allowedDomains.includes(parsedUrl.hostname) && last(parsedUrl.pathname.split('/')) === 'inbox';
+    const isAllowedDomain = allowedDomains.includes(parsedUrl.hostname);
+    const isHttps = parsedUrl.protocol === 'https:';
+    const isValidPath = !parsedUrl.pathname.includes('..') && last(parsedUrl.pathname.split('/')) === 'inbox';
+    return isAllowedDomain && isHttps && isValidPath;
   } catch (e) {
     return false;
   }
