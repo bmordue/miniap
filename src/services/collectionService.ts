@@ -1,12 +1,17 @@
 import { Request, Response } from 'express';
-import { getOutboxFromDB, addNoteToDB } from '../dbService';
 import { Note } from '../types';
 import { signActivity } from './utils';
+import DbService from '../dbService';
+import { Database, open } from "sqlite";
 
 export const getOutbox = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
   try {
-    const outboxCollection = await getOutboxFromDB(username);
+    const outboxCollection = await dbService.getOutboxFromDB(username);
     if (!outboxCollection) {
       res.status(404).json({ error: 'User not found' });
       return;
@@ -26,9 +31,12 @@ export const getOutbox = async (req: Request, res: Response): Promise<void> => {
 export const createNote = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;
   const note: Note = req.body;
-
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
   try {
-    await addNoteToDB(note);
+    await dbService.addNoteToDB(note);
     res.status(201).json(note);
   } catch (error) {
     console.error('Error creating note in database:', error);
