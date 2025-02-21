@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import DbService from '../dbService';
+import DbService from './dbService';
 import { signActivity } from './utils';
 import { open, Database } from 'sqlite';
 
