@@ -64,14 +64,10 @@ class DbService {
     await this.db.run('INSERT INTO followers (username, follower) VALUES (?, ?)', [username, follower]);
   }
 
-export const getFollowersWithVisibilityFromDB = async (username: string): Promise<FollowerWithVisibility[] | null> => {
-  const db = await dbPromise;
-  const res = await db.all('SELECT * FROM followers WHERE username = ?', [username]);
-  if (!res) {
-    return null;
+  public async getFollowersWithVisibilityFromDB (username: string): Promise<FollowerWithVisibility[] | null> {
+    const db = await dbPromise;
+    return await db.all('SELECT * FROM followers WHERE username = ?', [username]);
   }
-  return res;
-};
 
 export async function logDeliveryFailure(username: string, serialisedActivity: string, error: string): Promise<void> {
   const db = await dbPromise;
