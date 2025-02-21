@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getActorFromDB, getFollowersFromDB, getFollowingFromDB, getFollowersWithVisibilityFromDB, logDeliveryFailure, getDeliveryFailures } from '../dbService';
+import DbService from './dbService';
 import { signActivity } from './utils';
 import { open, Database } from 'sqlite';
 
@@ -78,7 +78,11 @@ export const getFollowing = async (req: Request, res: Response): Promise<void> =
 export const getFollowersWithVisibility = async (req: Request, res: Response): Promise<void> => {
   const username = req.params.username;
   try {
-    const followers = await getFollowersWithVisibilityFromDB(username);
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+    const followers = await dbService.getFollowersWithVisibilityFromDB(username);
     if (!followers) {
       res.status(404).json({ error: 'Followers not found' });
       return;
@@ -91,20 +95,27 @@ export const getFollowersWithVisibility = async (req: Request, res: Response): P
 };
 
 export const storeAndLogDeliveryFailure = async (req: Request, res: Response): Promise<void> => {
-  const { username, activityId, error } = req.body;
   try {
-    await logDeliveryFailure(username, activityId, error);
-    res.status(200).json({ status: 'ok' });
-  } catch (logError) {
-    console.error('Error logging delivery failure:', logError);
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+    const username = req.params.username;
+    dbService.logDeliveryFailure(username, req.body.serialisedActivity, req.body.error);
+  } catch (error) {
+    console.error('Error logging delivery failure:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 export const retrieveDeliveryFailures = async (req: Request, res: Response): Promise<void> => {
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
   const username = req.params.username;
   try {
-    const deliveryFailures = await getDeliveryFailures(username);
+    const deliveryFailures = await dbService.getDeliveryFailures(username);
     if (!deliveryFailures) {
       res.status(404).json({ error: 'Delivery failures not found' });
       return;

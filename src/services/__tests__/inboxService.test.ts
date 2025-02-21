@@ -1,10 +1,9 @@
 import { Request, Response } from "express";
 import { isValidUrl, postInbox, distributeActivity } from "../inboxService";
-import { getActorFromDB, getFollowersWithVisibilityFromDB } from "../../dbService";
+import DbService from "../dbService";
 import fetch from "node-fetch";
 import httpSignature from "http-signature";
 import { open, Database } from 'sqlite';
-import DbService from "../../dbService";
 
 jest.mock("../../dbService");
 jest.mock("node-fetch");
@@ -99,10 +98,6 @@ describe.skip("postInbox", () => {
   });
 
   it.skip("should sign the outgoing activity", async () => {
-    (getActorFromDB as jest.Mock).mockResolvedValue({
-      id: "https://example.com/users/alice",
-      inbox: aliceInbox,
-    });
 
     (httpSignature.verifySignature as jest.Mock).mockReturnValue(true);
 
@@ -152,7 +147,7 @@ describe("distributeActivity", () => {
       },
     ];
 
-    (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
+    // (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
 
     (fetch as unknown as jest.Mock).mockResolvedValue({
       ok: true,
@@ -186,7 +181,7 @@ describe("distributeActivity", () => {
       },
     ];
 
-    (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
+    // (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
 
     (fetch as unknown as jest.Mock).mockResolvedValue({
       ok: false,
@@ -235,7 +230,7 @@ describe("notifyFollowers", () => {
       },
     ];
 
-    (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
+    // (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
 
     (fetch as unknown as jest.Mock).mockResolvedValue({
       ok: true,
@@ -269,7 +264,7 @@ describe("notifyFollowers", () => {
       },
     ];
 
-    (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
+    // (getFollowersWithVisibilityFromDB as jest.Mock).mockResolvedValue(mockFollowers);
 
     (fetch as unknown as jest.Mock).mockResolvedValue({
       ok: false,

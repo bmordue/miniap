@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getActorFromDB, addFollowerToDB, getFollowersWithVisibilityFromDB, logDeliveryFailure } from '../dbService';
+import DbService from './dbService';
 import { open, Database } from 'sqlite';
 import fetch from 'node-fetch';
 import httpSignature from 'http-signature';
@@ -146,9 +146,22 @@ export async function distributeActivity(req: Request, res: Response): Promise<v
 };
 
 export async function handleDeliveryFailure(username: string, serialisedActivity: string, error: string): Promise<void> {
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
+  
   try {
-    await logDeliveryFailure(username, serialisedActivity, error);
+    await dbService.logDeliveryFailure(username, serialisedActivity, error);
   } catch (logError) {
     console.error('Error logging delivery failure:', logError);
   }
 };
+
+function addFollowerToDB(username: string, actor: any) {
+  throw new Error('Function not implemented.');
+}
+
+function getFollowersWithVisibilityFromDB(username: string) :Promise<FollowerWithVisibility[]> {
+  throw new Error('Function not implemented.');
+}
