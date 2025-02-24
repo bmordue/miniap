@@ -4,7 +4,7 @@ import DbService from '../dbService';
 import httpSignature from 'http-signature';
 import { open, Database } from 'sqlite';
 
-jest.mock('../../dbService');
+jest.mock('../dbService');
 jest.mock('http-signature');
 
 describe.skip('userService', () => {
