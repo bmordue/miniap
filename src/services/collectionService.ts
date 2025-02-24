@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Note } from '../types';
 import { signActivity } from './utils';
-import DbService from '../dbService';
+import DbService from './dbService';
 import { Database, open } from "sqlite";
 
 export const getOutbox = async (req: Request, res: Response): Promise<void> => {

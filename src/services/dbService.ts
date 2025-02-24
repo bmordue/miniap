@@ -1,6 +1,5 @@
-import sqlite3 from 'sqlite3';
-import { open, Database } from 'sqlite';
-import { Actor, OrderedCollection, Note, VisibilityType } from './types';
+import { Actor, OrderedCollection, Note, FollowerWithVisibility, DeliveryFailure } from '../types';
+import { Database } from 'sqlite';
 import fs from 'fs';
 import path from 'path';
 
@@ -21,47 +20,39 @@ class DbService {
   }
 
   public async getActorFromDB(username: string): Promise<Actor | null> {
-    const res = await this.db.get('SELECT * FROM actors WHERE preferredUsername = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+    return await this.db.get('SELECT * FROM actors WHERE preferredUsername = ?', [username]) || null;
   }
 
   public async getFollowersFromDB(username: string): Promise<OrderedCollection | null> {
-    const res = await this.db.get('SELECT * FROM followers WHERE username = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+    return await this.db.get('SELECT * FROM followers WHERE username = ?', [username]) || null;
   }
 
   public async getFollowingFromDB(username: string): Promise<OrderedCollection | null> {
-    const res = await this.db.get('SELECT * FROM following WHERE username = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+    return await this.db.get('SELECT * FROM following WHERE username = ?', [username]) || null;
   }
 
   public async getOutboxFromDB(username: string): Promise<OrderedCollection | null> {
-    const res = await this.db.get('SELECT * FROM outbox WHERE username = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+    return await this.db.get('SELECT * FROM outbox WHERE username = ?', [username]) || null;
   }
 
   public async getNoteFromDB(username: string): Promise<Note | null> {
-    const res = await this.db.get('SELECT * FROM notes WHERE username = ?', [username]);
-    if (!res) {
-      return null;
-    }
-    return res;
+    return await this.db.get('SELECT * FROM notes WHERE username = ?', [username]) || null;
   }
 
   public async addFollowerToDB(username: string, follower: string): Promise<void> {
     await this.db.run('INSERT INTO followers (username, follower) VALUES (?, ?)', [username, follower]);
+  }
+
+  public async getFollowersWithVisibilityFromDB (username: string): Promise<FollowerWithVisibility[] | null> {
+    return await this.db.all('SELECT * FROM followers WHERE username = ?', [username]);
+  }
+
+  public async logDeliveryFailure(username: string, serialisedActivity: string, error: string): Promise<void> {
+    await this.db.run('INSERT INTO delivery_failures (username, activityId, error) VALUES (?, ?, ?)', [username, serialisedActivity, error]);
+  }
+
+  public async getDeliveryFailures(username: string): Promise<DeliveryFailure[] | null> {
+    return await this.db.all('SELECT * FROM delivery_failures WHERE username = ?', [username]);
   }
 
   public async addNoteToDB(note: Note): Promise<void> {

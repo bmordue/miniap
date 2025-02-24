@@ -1,6 +1,6 @@
 import { Database, open } from "sqlite";
 import DbService from "../dbService";
-import { Note, Actor, OrderedCollection, VisibilityType } from "../types";
+import { Note, Actor, OrderedCollection, VisibilityType } from "../../types";
 import fs from "fs";
 import path from "path";
 
