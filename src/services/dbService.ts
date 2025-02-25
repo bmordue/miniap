@@ -8,6 +8,8 @@ import {
 import { Database } from "sqlite";
 import fs from "fs";
 import path from "path";
+import * as uuid from "uuid";
+import { parse_mentions } from "./mentionService";
 
 class DbService {
   private db: Database;
@@ -183,6 +185,112 @@ class DbService {
       [actorId, objectId]
     );
   }
+
+  // Add mentions and notifications table creation queries
+  async createMentionsTable() {
+    await this.db.run(`
+    CREATE TABLE IF NOT EXISTS mentions (
+      id UUID PRIMARY KEY,
+      post_id UUID NOT NULL,
+      mentioned_actor_id TEXT NOT NULL,
+      mentioner_id TEXT NOT NULL,
+      position INT,
+      created_at TIMESTAMP NOT NULL,
+      FOREIGN KEY (post_id) REFERENCES posts(id)
+    )
+  `);
+  }
+
+  async createNotificationsTable() {
+    await this.db.run(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id UUID PRIMARY KEY,
+      actor_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      originating_actor_id TEXT NOT NULL,
+      reference_id TEXT NOT NULL,
+      seen BOOLEAN DEFAULT false,
+      created_at TIMESTAMP NOT NULL,
+      data JSONB
+    )
+  `);
+  }
+
+  // Add store_mention function
+  public async storeMention(
+    post_id: string,
+    mentioned_actor: string,
+    mentioner: string
+  ): Promise<void> {
+    await this.db.run(
+      "INSERT INTO mentions (id, post_id, mentioned_actor_id, mentioner_id, created_at) VALUES (?, ?, ?, ?, NOW())",
+      [uuid.v4(), post_id, mentioned_actor, mentioner]
+    );
+  }
+
+  // Add create_notification function
+  public async createNotification(
+    actor_id: string,
+    type: string,
+    originating_actor: string,
+    reference: string,
+    data: any = null
+  ): Promise<void> {
+    await this.db.run(
+      "INSERT INTO notifications (id, actor_id, type, originating_actor_id, reference_id, created_at, data) VALUES (?, ?, ?, ?, ?, NOW(), ?)",
+      [uuid.v4(), actor_id, type, originating_actor, reference, data]
+    );
+  }
+
+  
+public async create_notification(actor_id: string, type: string, originating_actor: string, reference: string, data: any = null): Promise<void> {
+  await this.db.run(
+    'INSERT INTO notifications (id, actor_id, type, originating_actor_id, reference_id, created_at, data) VALUES (?, ?, ?, ?, ?, NOW(), ?)',
+    [uuid.v4(), actor_id, type, originating_actor, reference, data]
+  );
+};
+
+public async process_activity_for_notifications(activity: any): Promise<void> {
+  if (activity.type === 'Create') {
+    const mentions = parse_mentions(activity.object.content);
+    for (const mention of mentions) {
+      await this.create_notification(
+        activity.object.content.id,
+        'mention',
+        activity.actor,
+        activity.id,
+        { content: activity.object.content }
+      );
+    }
+
+    if (activity.inReplyTo) {
+      const original_post = await this.getNoteFromDB(activity.object.inReplyTo);
+      if (!original_post) {
+        return;
+      }
+      await this.create_notification(
+        original_post.attributedTo,
+        'reply',
+        activity.actor,
+        activity.id
+      );
+    }
+  }
+};
+
+public async get_notifications(actor_id: string, limit: number = 20, offset: number = 0): Promise<any[]> {
+  return await this.db.all(
+    'SELECT * FROM notifications WHERE actor_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+    [actor_id, limit, offset]
+  );
+};
+
+public async mark_notifications_as_read(notification_ids: string[], actor_id: string): Promise<void> {
+  await this.db.run(
+    'UPDATE notifications SET seen = true WHERE id = ANY(?) AND actor_id = ?',
+    [notification_ids, actor_id]
+  );
+};
 }
 
 export default DbService;
