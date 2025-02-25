@@ -121,7 +121,7 @@ describe.skip("postInbox", () => {
       id: "https://example.com/users/alice/activities/1",
     };
 
-    (getActorFromDB as jest.Mock).mockResolvedValue({
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
       id: "https://example.com/users/alice",
       inbox: aliceInbox,
     });
@@ -143,7 +143,7 @@ describe.skip("postInbox", () => {
       id: "https://example.com/users/alice/activities/1",
     };
 
-    (getActorFromDB as jest.Mock).mockResolvedValue({
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
       id: "https://example.com/users/alice",
       inbox: aliceInbox,
     });
@@ -169,7 +169,7 @@ describe.skip("postInbox", () => {
       },
     };
 
-    (getActorFromDB as jest.Mock).mockResolvedValue({
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
       id: "https://example.com/users/alice",
       inbox: aliceInbox,
     });
@@ -195,7 +195,7 @@ describe.skip("postInbox", () => {
       },
     };
 
-    (getActorFromDB as jest.Mock).mockResolvedValue({
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
       id: "https://example.com/users/alice",
       inbox: aliceInbox,
     });

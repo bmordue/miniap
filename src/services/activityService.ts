@@ -1,11 +1,17 @@
 import { Request, Response } from 'express';
-import { addLikeToDB, removeLikeFromDB, addAnnounceToDB, removeAnnounceFromDB } from '../dbService';
+import DbService from './dbService';
+import { Database, open } from "sqlite";
 
 export const postLike = async (req: Request, res: Response): Promise<void> => {
   const { actor, object, id } = req.body;
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
 
   try {
-    await addLikeToDB(actor, object, id);
+    
+    await dbService.addLikeToDB(actor, object, id);
     res.status(201).json({ status: 'Like added' });
   } catch (error) {
     console.error('Error adding like to database:', error);
@@ -15,9 +21,13 @@ export const postLike = async (req: Request, res: Response): Promise<void> => {
 
 export const postAnnounce = async (req: Request, res: Response): Promise<void> => {
   const { actor, object, id } = req.body;
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
 
   try {
-    await addAnnounceToDB(actor, object, id);
+    await dbService.addAnnounceToDB(actor, object, id);
     res.status(201).json({ status: 'Announce added' });
   } catch (error) {
     console.error('Error adding announce to database:', error);
@@ -27,13 +37,17 @@ export const postAnnounce = async (req: Request, res: Response): Promise<void> =
 
 export const postUndo = async (req: Request, res: Response): Promise<void> => {
   const { actor, object } = req.body;
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
 
   try {
     if (object.type === 'Like') {
-      await removeLikeFromDB(actor, object.id);
+      await dbService.removeLikeFromDB(actor, object.id);
       res.status(200).json({ status: 'Like removed' });
     } else if (object.type === 'Announce') {
-      await removeAnnounceFromDB(actor, object.id);
+      await dbService.removeAnnounceFromDB(actor, object.id);
       res.status(200).json({ status: 'Announce removed' });
     } else {
       res.status(400).json({ error: 'Invalid activity type' });
