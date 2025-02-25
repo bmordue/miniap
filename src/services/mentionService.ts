@@ -1,15 +1,11 @@
-import { dbPromise } from '../dbService';
-import { getLocalActor, webfingerLookup, isLocalUser } from './utils';
-import uuid from 'uuid';
-import * as re from 're';
-
-export const parse_mentions = (content: string): string[] => {
-  const mention_pattern = /@([a-zA-Z0-9_]+(@[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])?)/g;
+export function parse_mentions(content: string): string[] {
+  const mention_pattern =
+    /@([a-zA-Z0-9_]+(@[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])?)/g;
   const mentions = content.match(mention_pattern) || [];
-  return mentions.map(mention => normalize_mention(mention));
-};
+  return mentions.map(normalize_mention);
+}
 
-export const resolve_mentions = async (mentions: string[]): Promise<any[]> => {
+export async function resolve_mentions(mentions: string[]): Promise<any[]> {
   const resolved = [];
   for (const mention of mentions) {
     let actor;
@@ -23,12 +19,20 @@ export const resolve_mentions = async (mentions: string[]): Promise<any[]> => {
     }
   }
   return resolved;
-};
+}
 
-export const store_mention = async (post_id: string, mentioned_actor: string, mentioner: string): Promise<void> => {
-  const db = await dbPromise;
-  await db.run(
-    'INSERT INTO mentions (id, post_id, mentioned_actor_id, mentioner_id, created_at) VALUES (?, ?, ?, ?, NOW())',
-    [uuid.v4(), post_id, mentioned_actor, mentioner]
-  );
-};
+function normalize_mention(mention: string): any {
+  throw new Error("Function not implemented.");
+}
+
+function isLocalUser(mention: string): boolean {
+  throw new Error("Function not implemented.");
+}
+
+function getLocalActor(mention: string): any {
+  throw new Error("Function not implemented.");
+}
+
+function webfingerLookup(mention: string): any {
+  throw new Error("Function not implemented.");
+}
