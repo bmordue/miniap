@@ -127,15 +127,30 @@ async function notifyFollower(username :string, follower: FollowerWithVisibility
 export async function distributeActivity(req: Request, res: Response): Promise<void> {
   const username = req.params.username;
   const activity = req.body;
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
 
-  try {
-    const followers = await getFollowersWithVisibilityFromDB(username);
-    if (!followers) {
-      res.status(404).json({ error: 'Followers not found' });
-      return;
+try {
+  if (activity.type == 'Follow') {
+    // Update the followers collection
+    await addFollowerToDB(username, activity.actor);
+  } else if (activity.type === 'Like') {
+    await dbService.addLikeToDB(activity.actor, activity.object, activity.id);
+  } else if (activity.type === 'Announce') {
+    await dbService.addAnnounceToDB(activity.actor, activity.object, activity.id);
+  } else if (activity.type === 'Undo') {
+    const targetActivity = activity.object;
+    if (targetActivity.type === 'Like') {
+      await dbService.removeLikeFromDB(targetActivity.actor, targetActivity.object);
+    } else if (targetActivity.type === 'Announce') {
+      await dbService.removeAnnounceFromDB(targetActivity.actor, targetActivity.object);
     }
+  }
 
-    const deliveryPromises = followers.map(f => notifyFollower(username, f, activity));
+  const followers = await getFollowersWithVisibilityFromDB(username);
+  const deliveryPromises = followers.map(f => notifyFollower(username, f, activity));
 
     await Promise.all(deliveryPromises);
     res.status(200).json({ status: 'ok' });

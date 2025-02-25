@@ -111,6 +111,102 @@ describe.skip("postInbox", () => {
 
     expect(httpSignature.sign).toHaveBeenCalled();
   });
+
+  it("should add a Like activity to the database", async () => {
+    req.body = {
+      "@context": "https://www.w3.org/ns/activitystreams",
+      type: "Like",
+      actor: "https://example.com/users/alice",
+      object: "https://example.com/users/bob/posts/1",
+      id: "https://example.com/users/alice/activities/1",
+    };
+
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
+      id: "https://example.com/users/alice",
+      inbox: aliceInbox,
+    });
+
+    (httpSignature.verifySignature as jest.Mock).mockReturnValue(true);
+
+    await postInbox(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ status: "ok" });
+  });
+
+  it("should add an Announce activity to the database", async () => {
+    req.body = {
+      "@context": "https://www.w3.org/ns/activitystreams",
+      type: "Announce",
+      actor: "https://example.com/users/alice",
+      object: "https://example.com/users/bob/posts/1",
+      id: "https://example.com/users/alice/activities/1",
+    };
+
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
+      id: "https://example.com/users/alice",
+      inbox: aliceInbox,
+    });
+
+    (httpSignature.verifySignature as jest.Mock).mockReturnValue(true);
+
+    await postInbox(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ status: "ok" });
+  });
+
+  it("should process an Undo activity for a Like", async () => {
+    req.body = {
+      "@context": "https://www.w3.org/ns/activitystreams",
+      type: "Undo",
+      actor: "https://example.com/users/alice",
+      object: {
+        type: "Like",
+        id: "https://example.com/users/alice/activities/1",
+        actor: "https://example.com/users/alice",
+        object: "https://example.com/users/bob/posts/1",
+      },
+    };
+
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
+      id: "https://example.com/users/alice",
+      inbox: aliceInbox,
+    });
+
+    (httpSignature.verifySignature as jest.Mock).mockReturnValue(true);
+
+    await postInbox(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ status: "ok" });
+  });
+
+  it("should process an Undo activity for an Announce", async () => {
+    req.body = {
+      "@context": "https://www.w3.org/ns/activitystreams",
+      type: "Undo",
+      actor: "https://example.com/users/alice",
+      object: {
+        type: "Announce",
+        id: "https://example.com/users/alice/activities/1",
+        actor: "https://example.com/users/alice",
+        object: "https://example.com/users/bob/posts/1",
+      },
+    };
+
+    (db.getActorFromDB as jest.Mock).mockResolvedValue({
+      id: "https://example.com/users/alice",
+      inbox: aliceInbox,
+    });
+
+    (httpSignature.verifySignature as jest.Mock).mockReturnValue(true);
+
+    await postInbox(req as Request, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ status: "ok" });
+  });
 });
 
 describe.skip("distributeActivity", () => {
