@@ -1,5 +1,5 @@
 export type Actor = {
-  "@context": string[];
+  "@context": string[] | string;
   type: string;
   id: string;
   inbox: string;
@@ -8,6 +8,14 @@ export type Actor = {
   followers: string;
   preferredUsername: string;
   name: string;
+}
+
+export type Activity = {
+  "@context": "https://www.w3.org/ns/activitystreams";
+  type: string;
+  actor: string;
+  object: string;
+  to: string[];
 }
 
 export type OrderedCollection = {
@@ -98,4 +106,16 @@ export enum VisibilityType {
   Unlisted = 'unlisted',
   Followers = 'followers',
   Direct = 'direct'
+}
+
+export type FollowerWithVisibility = {
+  id: string;
+  inbox: string;
+  visibility: string;
+}
+
+export type DeliveryFailure = {
+  username: string;
+  activityId: string;
+  error: string;
 }

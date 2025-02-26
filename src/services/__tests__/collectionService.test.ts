@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import httpSignature from "http-signature";
 import { getOutbox, createNote } from "../collectionService";
-import DbService from "../../dbService";
+import DbService from "../dbService";
 import { open, Database } from 'sqlite';
 
-jest.mock("../../dbService");
+jest.mock("../dbService");
 jest.mock("http-signature");
 
 describe.skip("getOutbox", () => {
