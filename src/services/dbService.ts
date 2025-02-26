@@ -5,11 +5,12 @@ import {
   FollowerWithVisibility,
   DeliveryFailure,
 } from "../types";
-import { Database } from "sqlite";
 import fs from "fs";
 import path from "path";
 import * as uuid from "uuid";
 import { parse_mentions } from "./mentionService";
+import { open, Database } from "sqlite";
+import sqlite3 from "sqlite3";
 
 class DbService {
   private db: Database;
@@ -27,22 +28,67 @@ class DbService {
     await this.db.exec(schema);
   }
 
-  public async getActorFromDB(username: string): Promise<Actor | null> {
-    return (
-      (await this.db.get("SELECT * FROM actors WHERE preferredUsername = ?", [
-        username,
-      ])) || null
+  public static async open(filename: string | undefined) {
+    return await open({
+      filename: filename ?? ":memory:",
+      driver: sqlite3.Database,
+    });
+  }
+
+  public async addActor(actor: Actor): Promise<void> {
+    await this.db.run(
+      "INSERT INTO actors (id, preferredUsername, name, inbox, outbox, following, followers) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        actor.id,
+        actor.preferredUsername,
+        actor.name,
+        actor.inbox,
+        actor.outbox,
+        actor.following,
+        actor.followers,
+      ]
     );
+  }
+
+  public async getActorFromDB(username: string): Promise<Actor | null> {
+    const result = await this.db.get(
+      "SELECT * FROM actors WHERE preferredUsername = ?",
+      [username]
+    );
+    if (!result) {
+      return null;
+    }
+    result["@context"] = "https://www.w3.org/ns/activitystreams";
+
+    result.type = "Person";
+    return result;
   }
 
   public async getFollowersFromDB(
     username: string
   ): Promise<OrderedCollection | null> {
-    return (
-      (await this.db.get("SELECT * FROM followers WHERE username = ?", [
+    const result = await this.db.get("SELECT * FROM followers WHERE username = ?", [
         username,
-      ])) || null
-    );
+      ]);
+    if (!result) {
+      return null;
+    }
+    
+    // let response = {
+    //   "@context": "https://www.w3.org/ns/activitystreams",
+    //   "orderedItems": Array [
+    //     Object {
+    //       "id": "https://example.com/users/bob",
+    //       "name": "Bob",
+    //       "preferredUsername": "bob",
+    //       "type": "Person",
+    //     },
+    //   ],
+    //   "totalItems": 1,
+    //   "type": "OrderedCollection",
+  
+    // };
+    return result;
   }
 
   public async getFollowingFromDB(
@@ -66,11 +112,18 @@ class DbService {
   }
 
   public async getNoteFromDB(username: string): Promise<Note | null> {
-    return (
-      (await this.db.get("SELECT * FROM notes WHERE username = ?", [
-        username,
-      ])) || null
+    const result = await this.db.get(
+      "SELECT * FROM notes WHERE attributedTo = ?",
+      [username]
     );
+    if (!result) {
+      return null;
+    }
+    result["@context"] = "https://www.w3.org/ns/activitystreams";
+    result.type = "Note";
+    result.to = JSON.parse(result.toActor);
+    delete result.toActor;
+    return result;
   }
 
   public async addFollowerToDB(
@@ -113,7 +166,7 @@ class DbService {
 
   public async addNoteToDB(note: Note): Promise<void> {
     await this.db.run(
-      "INSERT INTO notes (id, attributedTo, content, published, to, visibility) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO notes (id, attributedTo, content, published, toActor, visibility) VALUES (?, ?, ?, ?, ?, ?)",
       [
         note.id,
         note.attributedTo,
@@ -127,7 +180,7 @@ class DbService {
 
   public async updateNoteInDB(note: Note): Promise<void> {
     await this.db.run(
-      "UPDATE notes SET content = ?, published = ?, to = ?, visibility = ? WHERE id = ?",
+      "UPDATE notes SET content = ?, published = ?, toActor = ?, visibility = ? WHERE id = ?",
       [
         note.content,
         note.published,
@@ -242,55 +295,71 @@ class DbService {
     );
   }
 
-  
-public async create_notification(actor_id: string, type: string, originating_actor: string, reference: string, data: any = null): Promise<void> {
-  await this.db.run(
-    'INSERT INTO notifications (id, actor_id, type, originating_actor_id, reference_id, created_at, data) VALUES (?, ?, ?, ?, ?, NOW(), ?)',
-    [uuid.v4(), actor_id, type, originating_actor, reference, data]
-  );
-};
+  public async create_notification(
+    actor_id: string,
+    type: string,
+    originating_actor: string,
+    reference: string,
+    data: any = null
+  ): Promise<void> {
+    await this.db.run(
+      "INSERT INTO notifications (id, actor_id, type, originating_actor_id, reference_id, created_at, data) VALUES (?, ?, ?, ?, ?, NOW(), ?)",
+      [uuid.v4(), actor_id, type, originating_actor, reference, data]
+    );
+  }
 
-public async process_activity_for_notifications(activity: any): Promise<void> {
-  if (activity.type === 'Create') {
-    const mentions = parse_mentions(activity.object.content);
-    for (const mention of mentions) {
-      await this.create_notification(
-        activity.object.content.id,
-        'mention',
-        activity.actor,
-        activity.id,
-        { content: activity.object.content }
-      );
-    }
-
-    if (activity.inReplyTo) {
-      const original_post = await this.getNoteFromDB(activity.object.inReplyTo);
-      if (!original_post) {
-        return;
+  public async process_activity_for_notifications(
+    activity: any
+  ): Promise<void> {
+    if (activity.type === "Create") {
+      const mentions = parse_mentions(activity.object.content);
+      for (const mention of mentions) {
+        await this.create_notification(
+          activity.object.content.id,
+          "mention",
+          activity.actor,
+          activity.id,
+          { content: activity.object.content }
+        );
       }
-      await this.create_notification(
-        original_post.attributedTo,
-        'reply',
-        activity.actor,
-        activity.id
-      );
+
+      if (activity.inReplyTo) {
+        const original_post = await this.getNoteFromDB(
+          activity.object.inReplyTo
+        );
+        if (!original_post) {
+          return;
+        }
+        await this.create_notification(
+          original_post.attributedTo,
+          "reply",
+          activity.actor,
+          activity.id
+        );
+      }
     }
   }
-};
 
-public async get_notifications(actor_id: string, limit: number = 20, offset: number = 0): Promise<any[]> {
-  return await this.db.all(
-    'SELECT * FROM notifications WHERE actor_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-    [actor_id, limit, offset]
-  );
-};
+  public async get_notifications(
+    actor_id: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<any[]> {
+    return await this.db.all(
+      "SELECT * FROM notifications WHERE actor_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      [actor_id, limit, offset]
+    );
+  }
 
-public async mark_notifications_as_read(notification_ids: string[], actor_id: string): Promise<void> {
-  await this.db.run(
-    'UPDATE notifications SET seen = true WHERE id = ANY(?) AND actor_id = ?',
-    [notification_ids, actor_id]
-  );
-};
+  public async mark_notifications_as_read(
+    notification_ids: string[],
+    actor_id: string
+  ): Promise<void> {
+    await this.db.run(
+      "UPDATE notifications SET seen = true WHERE id = ANY(?) AND actor_id = ?",
+      [notification_ids, actor_id]
+    );
+  }
 }
 
 export default DbService;

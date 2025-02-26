@@ -1,8 +1,5 @@
-import { Database, open } from "sqlite";
 import DbService from "../dbService";
-import { Note, Actor, OrderedCollection, VisibilityType } from "../../types";
-import fs from "fs";
-import path from "path";
+import { Actor, OrderedCollection, VisibilityType } from "../../types";
 
 
 // Mock the database modules
@@ -18,100 +15,51 @@ import path from "path";
 //   exec: jest.fn(),
 // };
 
-const dbPromise = open({
-  filename: ':memory:',
-  driver: Database
-});
+// const dbPromise = open({
+//   filename: ':memory:',
+//   driver: Database
+// });
 
 // Mock the open function to return our mock database
 // (open as jest.Mock).mockResolvedValue(mockDb);
 
-describe.skip("Database Initialization", () => {
-  it("should initialize the database with the correct schema", async () => {
-    const schemaPath = path.join(__dirname, "../schema.sql");
-    const schema = fs.readFileSync(schemaPath, "utf-8");
+let dbService: DbService;
 
-
-    const dbService = new DbService(await dbPromise);
-
-    // expect(mockDb.exec).toHaveBeenCalledWith(schema);
+describe('DbService', () => {
+  it('should initialise db', async () => {
+    const db = await DbService.open(':memory:');
+    dbService = new DbService(db);
   });
 });
 
-describe.skip("Database Note Operations", () => {
-  let mockNote: Note;
-  let dbService: DbService;
+describe("Database Note Operations", () => {
+
+  const testNote = {
+    "@context": "https://www.w3.org/ns/activitystreams",
+    type: "Note",
+    id: "https://example.com/users/alice/notes/1",
+    attributedTo: "https://example.com/users/alice",
+    content: "Test content",
+    published: "2023-01-01T00:00:00Z",
+    to: ["https://www.w3.org/ns/activitystreams#Public"],
+    visibility: VisibilityType.Public,
+  };
 
   beforeEach(async () => {
-    // Reset all mocks before each test
-    jest.clearAllMocks();
-
-    process.env.DB_FILENAME = ":memory:";
-
-    // Reset mock implementations
-    // mockDb.run.mockResolvedValue(undefined);
-    // mockDb.get.mockResolvedValue({ id: "1" });
-
-    mockNote = {
-      "@context": "https://www.w3.org/ns/activitystreams",
-      type: "Note",
-      id: "https://example.com/users/alice/notes/1",
-      attributedTo: "https://example.com/users/alice",
-      content: "Test content",
-      published: "2023-01-01T00:00:00Z",
-      to: ["https://www.w3.org/ns/activitystreams#Public"],
-      visibility: VisibilityType.Public,
-    };
-
-    dbService = new DbService(await dbPromise);
+    const db = await DbService.open(':memory:');
+    dbService = new DbService(db);
   });
 
   describe("addNoteToDB", () => {
     it("should successfully add a note to the database", async () => {
-      await dbService.addNoteToDB(mockNote);
-
-      // expect(mockDb.run).toHaveBeenCalledWith(
-      //   "INSERT INTO notes (id, attributedTo, content, published, to, visibility) VALUES (?, ?, ?, ?, ?, ?)",
-      //   [
-      //     mockNote.id,
-      //     mockNote.attributedTo,
-      //     mockNote.content,
-      //     mockNote.published,
-      //     JSON.stringify(mockNote.to),
-      //     mockNote.visibility,
-      //   ],
-      // );
+      await dbService.addNoteToDB(testNote);
     });
 
-    it("should throw an error if database operation fails", async () => {
-      const error = new Error("Database error");
-      // mockDb.run.mockRejectedValueOnce(error);
-
-      await expect(dbService.addNoteToDB(mockNote)).rejects.toThrow("Database error");
-    });
   });
 
   describe("updateNoteInDB", () => {
     it("should successfully update a note in the database", async () => {
-      await dbService.updateNoteInDB(mockNote);
-
-      // expect(mockDb.run).toHaveBeenCalledWith(
-      //   "UPDATE notes SET content = ?, published = ?, to = ?, visibility = ? WHERE id = ?",
-      //   [
-      //     mockNote.content,
-      //     mockNote.published,
-      //     JSON.stringify(mockNote.to),
-      //     mockNote.visibility,
-      //     mockNote.id,
-      //   ],
-      // );
-    });
-
-    it("should throw an error if database operation fails", async () => {
-      const error = new Error("Database error");
-      // mockDb.run.mockRejectedValueOnce(error);
-
-      await expect(dbService.updateNoteInDB(mockNote)).rejects.toThrow("Database error");
+      await dbService.updateNoteInDB(testNote);
     });
   });
 
@@ -119,95 +67,51 @@ describe.skip("Database Note Operations", () => {
     it("should successfully delete a note from the database", async () => {
       const noteId = "1";
       await dbService.deleteNoteFromDB(noteId);
-
-      // expect(mockDb.run).toHaveBeenCalledWith(
-      //   "DELETE FROM notes WHERE id = ?",
-      //   [noteId],
-      // );
     });
 
-    it("should throw an error if database operation fails", async () => {
-      const error = new Error("Database error");
-      // mockDb.run.mockRejectedValueOnce(error);
-
-      await expect(dbService.deleteNoteFromDB("1")).rejects.toThrow("Database error");
-    });
   });
 
   describe("getNoteFromDB", () => {
     it("should successfully retrieve a note from the database", async () => {
       const username = "alice";
-      const mockNoteData = { ...mockNote };
-      // mockDb.get.mockResolvedValueOnce(mockNoteData);
-
-      const result = await dbService.getNoteFromDB(username);
-
-      // expect(mockDb.get).toHaveBeenCalledWith(
-      //   "SELECT * FROM notes WHERE username = ?",
-      //   [username],
-      // );
-      expect(result).toEqual(mockNoteData);
+      const expectedNoteData = { ...testNote };
+      await dbService.addNoteToDB(testNote);
+      const result = await dbService.getNoteFromDB(testNote.attributedTo);
+      expect(result).toEqual(expectedNoteData);
     });
 
     it("should return null if note is not found", async () => {
-      // mockDb.get.mockResolvedValueOnce(null);
-
-      const result = await dbService.getNoteFromDB("alice");
-
+      const result = await dbService.getNoteFromDB("notaperson");
       expect(result).toBeNull();
-    });
-
-    it("should throw an error if database operation fails", async () => {
-      const error = new Error("Database error");
-      // mockDb.get.mockRejectedValueOnce(error);
-
-      await expect(dbService.getNoteFromDB("alice")).rejects.toThrow("Database error");
     });
   });
 });
 
-describe.skip("Database Actor Operations", () => {
-  let mockActor: Actor;
-  let dbService: DbService;
+describe("Database Actor Operations", () => {
+  const testActor: Actor = {
+    "@context": "https://www.w3.org/ns/activitystreams",
+    type: "Person",
+    id: "https://example.com/users/alice",
+    preferredUsername: "alice",
+    name: "Alice",
+    inbox: "https://example.com/users/alice/inbox",
+    outbox: "https://example.com/users/alice/outbox",
+    following: "https://example.com/users/alice/following",
+    followers: "https://example.com/users/alice/followers",
+  };
 
   beforeEach(async () => {
-    // Reset all mocks before each test
-    jest.clearAllMocks();
-
-    process.env.DB_FILENAME = ":memory:";
-
-    // Reset mock implementations
-    // mockDb.run.mockResolvedValue(undefined);
-    // mockDb.get.mockResolvedValue({ id: "1" });
-
-    mockActor = {
-      "@context": ["https://www.w3.org/ns/activitystreams"],
-      type: "Person",
-      id: "https://example.com/users/alice",
-      preferredUsername: "alice",
-      name: "Alice",
-      inbox: "https://example.com/users/alice/inbox",
-      outbox: "https://example.com/users/alice/outbox",
-      following: "https://example.com/users/alice/following",
-      followers: "https://example.com/users/alice/followers",
-    };
-
-    dbService = new DbService(await dbPromise);
+    const db = await DbService.open(':memory:');
+    dbService = new DbService(db);
   });
 
   describe("getActorFromDB", () => {
     it("should successfully retrieve an actor from the database", async () => {
-      const username = "alice";
-      const mockActorData = { ...mockActor };
-      // mockDb.get.mockResolvedValueOnce(mockActorData);
+      const expectedActorData = { ...testActor };
+      await dbService.addActor(testActor);
 
-      const result = await dbService.getActorFromDB(username);
-
-      // expect(mockDb.get).toHaveBeenCalledWith(
-      //   "SELECT * FROM actors WHERE preferredUsername = ?",
-      //   [username],
-      // );
-      expect(result).toEqual(mockActorData);
+      const result = await dbService.getActorFromDB(testActor.preferredUsername);
+      expect(result).toEqual(expectedActorData);
     });
 
     it("should return null if actor is not found", async () => {
@@ -218,59 +122,73 @@ describe.skip("Database Actor Operations", () => {
       expect(result).toBeNull();
     });
 
-    it("should throw an error if database operation fails", async () => {
-      const error = new Error("Database error");
-      // mockDb.get.mockRejectedValueOnce(error);
-
-      await expect(dbService.getActorFromDB("alice")).rejects.toThrow("Database error");
-    });
   });
 });
 
-describe.skip("Database Followers Operations", () => {
-  let mockFollowers: OrderedCollection;
-  let dbService: DbService;
+describe("Database Followers Operations", () => {
+  const mockFollowers: OrderedCollection = {
+    "@context": "https://www.w3.org/ns/activitystreams",
+    type: "OrderedCollection",
+    totalItems: 1,
+    orderedItems: [
+      {
+        type: "Person",
+        id: "https://example.com/users/bob",
+        preferredUsername: "bob",
+        name: "Bob",
+      },
+    ],
+  };
 
   beforeEach(async () => {
-    // Reset all mocks before each test
-    jest.clearAllMocks();
-
-    process.env.DB_FILENAME = ":memory:";
-
-    // Reset mock implementations
-    // mockDb.run.mockResolvedValue(undefined);
-    // mockDb.get.mockResolvedValue({ id: "1" });
-
-    mockFollowers = {
-      "@context": "https://www.w3.org/ns/activitystreams",
-      type: "OrderedCollection",
-      totalItems: 1,
-      orderedItems: [
-        {
-          type: "Person",
-          id: "https://example.com/users/bob",
-          preferredUsername: "bob",
-          name: "Bob",
-        },
-      ],
-    };
-
-    dbService = new DbService(await dbPromise);
+    const db = await DbService.open(':memory:');
+    dbService = new DbService(db);
   });
 
   describe("getFollowersFromDB", () => {
-    it("should successfully retrieve followers from the database", async () => {
-      const username = "alice";
-      const mockFollowersData = { ...mockFollowers };
-      // mockDb.get.mockResolvedValueOnce(mockFollowersData);
 
+    // TODO
+    it.skip("should successfully retrieve followers from the database", async () => {
+      const username = "alice";
+
+      // arrange
+      await dbService.addActor({
+        "id": "https://example.com/users/alice", "name": "Alice", "preferredUsername": username, "type": "Person",
+        "@context": "",
+        inbox: "",
+        outbox: "",
+        following: "",
+        followers: ""
+      });
+
+      const followerUsername = "bob";
+      await dbService.addActor({
+        "id": "https://example.com/users/bob", "name": "Bob", "preferredUsername": followerUsername, "type": "Person",
+        "@context": "",
+        inbox: "",
+        outbox: "",
+        following: "",
+        followers: ""
+      });
+      await dbService.addFollowerToDB(username, followerUsername);
+
+      const followerUsernameTwo = "charlie";
+      await dbService.addActor({
+        "id": "https://example.com/users/charlie", "name": "Charlie", "preferredUsername": followerUsernameTwo, "type": "Person",
+        "@context": "",
+        inbox: "",
+        outbox: "",
+        following: "",
+        followers: ""
+      });
+      await dbService.addFollowerToDB(username, followerUsernameTwo);
+
+
+      // act 
       const result = await dbService.getFollowersFromDB(username);
 
-      // expect(mockDb.get).toHaveBeenCalledWith(
-      //   "SELECT * FROM followers WHERE username = ?",
-      //   [username],
-      // );
-      expect(result).toEqual(mockFollowersData);
+      // assert
+      expect(result).toEqual(mockFollowers);
     });
 
     it("should return null if followers are not found", async () => {
@@ -281,12 +199,7 @@ describe.skip("Database Followers Operations", () => {
       expect(result).toBeNull();
     });
 
-    it("should throw an error if database operation fails", async () => {
-      const error = new Error("Database error");
-      // mockDb.get.mockRejectedValueOnce(error);
 
-      await expect(dbService.getFollowersFromDB("alice")).rejects.toThrow("Database error");
-    });
   });
 
   describe("addFollowerToDB", () => {
@@ -302,30 +215,12 @@ describe.skip("Database Followers Operations", () => {
       // );
     });
 
-    it("should throw an error if database operation fails", async () => {
-      const error = new Error("Database error");
-      // mockDb.run.mockRejectedValueOnce(error);
 
-      await expect(dbService.addFollowerToDB("alice", "bob")).rejects.toThrow("Database error");
-    });
   });
 });
 
-describe.skip("Database Following Operations", () => {
-  let mockFollowing: OrderedCollection;
-  let dbService: DbService;
-
-  beforeEach(async () => {
-    // Reset all mocks before each test
-    jest.clearAllMocks();
-
-    process.env.DB_FILENAME = ":memory:";
-
-    // Reset mock implementations
-    // mockDb.run.mockResolvedValue(undefined);
-    // mockDb.get.mockResolvedValue({ id: "1" });
-
-    mockFollowing = {
+describe("Database Following Operations", () => {
+  const mockFollowing: OrderedCollection= {
       "@context": "https://www.w3.org/ns/activitystreams",
       type: "OrderedCollection",
       totalItems: 1,
@@ -339,11 +234,9 @@ describe.skip("Database Following Operations", () => {
       ],
     };
 
-    dbService = new DbService(await dbPromise);
-  });
 
   describe("getFollowingFromDB", () => {
-    it("should successfully retrieve following from the database", async () => {
+    it.skip("should successfully retrieve following from the database", async () => {
       const username = "alice";
       const mockFollowingData = { ...mockFollowing };
       // mockDb.get.mockResolvedValueOnce(mockFollowingData);
@@ -365,18 +258,11 @@ describe.skip("Database Following Operations", () => {
       expect(result).toBeNull();
     });
 
-    it("should throw an error if database operation fails", async () => {
-      const error = new Error("Database error");
-      // mockDb.get.mockRejectedValueOnce(error);
-
-      await expect(dbService.getFollowingFromDB("alice")).rejects.toThrow("Database error");
-    });
   });
 });
 
-describe.skip("Database Outbox Operations", () => {
+describe("Database Outbox Operations", () => {
   let mockOutbox: OrderedCollection;
-  let dbService: DbService;
 
   beforeEach(async () => {
     // Reset all mocks before each test
@@ -407,11 +293,16 @@ describe.skip("Database Outbox Operations", () => {
       ],
     };
 
-    dbService = new DbService(await dbPromise);
+    const db = await DbService.open(':memory:');
+    dbService = new DbService(db);
   });
 
   describe("getOutboxFromDB", () => {
-    it("should successfully retrieve outbox from the database", async () => {
+    beforeEach(async () => {
+      const db = await DbService.open(':memory:');
+      dbService = new DbService(db);
+    });
+    it.skip("should successfully retrieve outbox from the database", async () => {
       const username = "alice";
       const mockOutboxData = { ...mockOutbox };
       // mockDb.get.mockResolvedValueOnce(mockOutboxData);
@@ -433,11 +324,5 @@ describe.skip("Database Outbox Operations", () => {
       expect(result).toBeNull();
     });
 
-    it("should throw an error if database operation fails", async () => {
-      const error = new Error("Database error");
-      // mockDb.get.mockRejectedValueOnce(error);
-
-      await expect(dbService.getOutboxFromDB("alice")).rejects.toThrow("Database error");
-    });
   });
 });

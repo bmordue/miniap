@@ -1,5 +1,5 @@
 export type Actor = {
-  "@context": string[];
+  "@context": string[] | string;
   type: string;
   id: string;
   inbox: string;
