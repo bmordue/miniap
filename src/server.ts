@@ -5,6 +5,11 @@ import { getUser, getFollowers, getFollowing } from './services/userService';
 import { getOutbox } from './services/collectionService';
 import { getNote, createNote, updateNote, deleteNote, get_thread_context, create_reply } from './services/noteService';
 import { postInbox } from './services/inboxService';
+import { process_activity_for_notifications } from './services/notificationService';
+import { postLike, postAnnounce, postUndo } from './services/activityService';
+import { distributeActivity } from './services/inboxService';
+import DbService from './services/dbService';
+import { open, Database } from "sqlite";
 
 const app = express();
 
@@ -44,7 +49,12 @@ app.get('/users/:username/outbox', activityPubHeaders, getOutbox);
 
 app.get('/users/:username/notes/1', activityPubHeaders, getNote);
 
-app.post('/users/:username/inbox', limiter, activityPubHeaders, postInbox);
+app.post('/users/:username/inbox', limiter, activityPubHeaders, async (req: Request, res: Response) => {
+  await postInbox(req, res);
+  await process_activity_for_notifications(req.body);
+});
+
+app.post('/users/:username/notify', limiter, activityPubHeaders, distributeActivity);
 
 app.post('/users/:username/outbox', activityPubHeaders, createNote);
 
@@ -64,14 +74,25 @@ app.get('/api/v1/statuses/:id/context', activityPubHeaders, async (req: Request,
 
 app.post('/api/v1/statuses/:id/reply', activityPubHeaders, async (req: Request, res: Response) => {
   try {
+    const dbService = new DbService(await open({
+      filename: '../activitypub.db',
+      driver: Database
+    }));
+
     const activity = await create_reply(req.body.content, req.params.id);
-    const reply_id = await addNoteToDB(activity);
-    res.status(201).json(await getNoteFromDB(reply_id));
+    const reply_id = activity.id;
+    await dbService.addNoteToDB(activity);
+    res.status(201).json(await dbService.getNoteFromDB(reply_id));
   } catch (error) {
     console.error('Error creating reply:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+app.post('/users/:username/likes', activityPubHeaders, postLike);
+
+app.post('/users/:username/announces', activityPubHeaders, postAnnounce);
+
+app.post('/users/:username/undo', activityPubHeaders, postUndo);
 
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Server running at http://localhost:${process.env.PORT || 3000}`);

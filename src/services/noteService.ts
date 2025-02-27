@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import DbService from '../dbService';
+import DbService from './dbService';
 import { signActivity } from './utils';
 import { open, Database } from 'sqlite';
 
@@ -76,13 +76,17 @@ export const deleteNote = async (req: Request, res: Response): Promise<void> => 
 };
 
 export const create_reply = async (content: string, in_reply_to_id: string): Promise<any> => {
-  const parent = await getNoteFromDB(in_reply_to_id);
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
+  const parent = await dbService.getNoteFromDB(in_reply_to_id);
   if (!parent) {
     throw new Error('Parent post not found');
   }
 
-  const root_id = parent.root_post_id || parent.id;
-  const depth = parent.thread_depth + 1;
+  const root_id = parent.id;
+  const depth = 1; // parent.thread_depth + 1;
 
   const activity = {
     "@context": "https://www.w3.org/ns/activitystreams",
@@ -91,54 +95,64 @@ export const create_reply = async (content: string, in_reply_to_id: string): Pro
     "object": {
       "type": "Note",
       "content": content,
-      "inReplyTo": parent.activity_id,
+      "inReplyTo": parent.id,
       "conversation": root_id,
       "depth": depth
     }
   };
 
-  const [to, cc] = await get_thread_recipients(root_id);
-  activity["to"] = to;
-  activity["cc"] = cc;
+  // const [to, cc] = await get_thread_recipients(root_id);
+  // activity["to"] = to;
+  // activity["cc"] = cc;
 
   return activity;
 };
 
 export const process_reply_activity = async (activity: any): Promise<void> => {
-  const object = activity.object;
-  const in_reply_to = object.inReplyTo;
+}
+//   const object = activity.object;
+//   const in_reply_to = object.inReplyTo;
 
-  const parent = await fetch_remote_object(in_reply_to);
-  if (!parent) {
-    throw new Error('Parent post not found');
-  }
+//   const parent = await fetch_remote_object(in_reply_to);
+//   if (!parent) {
+//     throw new Error('Parent post not found');
+//   }
 
-  const reply_id = await store_reply(
-    activity,
-    parent.local_id,
-    parent.root_post_id || parent.local_id,
-    object.depth || parent.thread_depth + 1
-  );
+//   const reply_id = await store_reply(
+//     activity,
+//     parent.local_id,
+//     parent.root_post_id || parent.local_id,
+//     object.depth || parent.thread_depth + 1
+//   );
 
-  await update_reply_counts(parent.local_id);
-  await notify_thread_participants(reply_id);
-};
+//   await update_reply_counts(parent.local_id);
+//   await notify_thread_participants(reply_id);
+// };
 
 export const get_thread_context = async (post_id: string): Promise<any> => {
-  const post = await getNoteFromDB(post_id);
-  const root_id = post.root_post_id || post_id;
+  const db = await open({
+    filename: '../activitypub.db',
+    driver: Database
+  });
+  const dbService = new DbService(db);
 
-  const thread_posts = await db.fetch(`
+  const post = await dbService.getNoteFromDB(post_id);
+  if (!post) {
+    return;
+  }
+  const root_id = post.id || post_id;
+
+  const thread_posts = await db.run(`
     SELECT * FROM posts 
     WHERE root_post_id = ? 
     ORDER BY thread_depth, created_at
   `, root_id);
 
-  const thread_tree = build_thread_tree(thread_posts);
+  const thread_tree = {}; // build_thread_tree(thread_posts);
 
   return {
     root: thread_tree,
     focused_post: post,
-    participants: await get_thread_participants(root_id)
+    participants: [] // await get_thread_participants(root_id)
   };
 };
