@@ -6,7 +6,7 @@ import { getOutbox } from './services/collectionService';
 import { getNote, createNote, updateNote, deleteNote, get_thread_context, create_reply } from './services/noteService';
 import { postInbox } from './services/inboxService';
 import { process_activity_for_notifications } from './services/notificationService';
-import { postLike, postAnnounce, postUndo } from './services/activityService';
+import ActivityService from './services/activityService';
 import { distributeActivity } from './services/inboxService';
 import DbService from './services/dbService';
 import { open, Database } from "sqlite";
@@ -88,11 +88,36 @@ app.post('/api/v1/statuses/:id/reply', activityPubHeaders, async (req: Request, 
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-app.post('/users/:username/likes', activityPubHeaders, postLike);
 
-app.post('/users/:username/announces', activityPubHeaders, postAnnounce);
+app.post('/users/:username/likes', activityPubHeaders, async (req: Request, res: Response) => {
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
 
-app.post('/users/:username/undo', activityPubHeaders, postUndo);
+  const activityService = new ActivityService(dbService);
+  return activityService.postLike(req, res);
+});
+
+app.post('/users/:username/announces', activityPubHeaders, async (req: Request, res: Response) => {
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
+
+  const activityService = new ActivityService(dbService);
+  return activityService.postAnnounce(req, res);
+});
+
+app.post('/users/:username/undo', activityPubHeaders, async (req: Request, res: Response) => {
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
+
+  const activityService = new ActivityService(dbService);
+  return activityService.postUndo(req, res);
+});
 
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Server running at http://localhost:${process.env.PORT || 3000}`);
