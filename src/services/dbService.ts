@@ -360,6 +360,42 @@ class DbService {
       [notification_ids, actor_id]
     );
   }
+
+    // Add threading fields to posts table
+  public async addThreadingFieldsToPostsTable(): Promise<void> {
+    await this.db.run(`
+    ALTER TABLE posts
+    ADD COLUMN in_reply_to_id UUID,
+    ADD COLUMN root_post_id UUID,
+    ADD COLUMN thread_depth INT DEFAULT 0,
+    ADD COLUMN replies_count INT DEFAULT 0,
+    ADD FOREIGN KEY (in_reply_to_id) REFERENCES posts(id),
+    ADD FOREIGN KEY (root_post_id) REFERENCES posts(id)
+  `);
+  }
+
+  // Add thread_participants table
+  public async addThreadParticipantsTable(): Promise<void> {
+    await this.db.run(`
+    CREATE TABLE thread_participants (
+      thread_id UUID NOT NULL,
+      actor_id TEXT NOT NULL,
+      last_read_at TIMESTAMP,
+      muted BOOLEAN DEFAULT false,
+      created_at TIMESTAMP NOT NULL,
+      PRIMARY KEY (thread_id, actor_id),
+      FOREIGN KEY (thread_id) REFERENCES posts(id)
+    )
+  `);
+  }
+
+  // Add indexes for efficient thread lookups
+  public async addThreadLookupIndexes(): Promise<void> {
+    await this.db.run(`
+    CREATE INDEX posts_thread_lookup ON posts (root_post_id, created_at);
+    CREATE INDEX posts_reply_lookup ON posts (in_reply_to_id, created_at);
+  `);
+  }
 }
 
 export default DbService;

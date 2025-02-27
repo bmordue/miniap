@@ -108,7 +108,15 @@ export enum VisibilityType {
   Direct = 'direct'
 }
 
-export type FollowerWithVisibility = {
+export type ThreadParticipant = {
+  thread_id: string;
+  actor_id: string;
+  last_read_at: string;
+  muted: boolean;
+  created_at: string;
+}
+
+  export type FollowerWithVisibility = {
   id: string;
   inbox: string;
   visibility: string;
