@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import { json } from 'body-parser';
 import { getUser, getFollowers, getFollowing } from './services/userService';
-import { getOutbox } from './services/collectionService';
+import CollectionService from './services/collectionService';
 import { getNote, createNote, updateNote, deleteNote, get_thread_context, create_reply } from './services/noteService';
 import { postInbox } from './services/inboxService';
 import { process_activity_for_notifications } from './services/notificationService';
@@ -45,7 +45,16 @@ app.get('/users/:username/followers', activityPubHeaders, getFollowers);
 
 app.get('/users/:username/following', activityPubHeaders, getFollowing);
 
-app.get('/users/:username/outbox', activityPubHeaders, getOutbox);
+app.get('/users/:username/outbox', activityPubHeaders, async (req: Request, res: Response) => {
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
+
+  const collectionService = new CollectionService(dbService);
+
+  return collectionService.getOutbox(req, res);
+});
 
 app.get('/users/:username/notes/1', activityPubHeaders, getNote);
 
