@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { isValidUrl, postInbox, distributeActivity } from "../inboxService";
+import InboxService from "../inboxService";
 import DbService from "../dbService";
 import fetch from "node-fetch";
 import httpSignature from "http-signature";
@@ -15,6 +15,7 @@ describe.skip("postInbox", () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
   let db: DbService;
+  let inboxService :InboxService;
 
   beforeEach(async () => {
     const dbPromise = open({
@@ -38,10 +39,12 @@ describe.skip("postInbox", () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
+
+    inboxService = new InboxService(db);
   });
 
   it("should identify valid inbox URL", () => {
-    expect(isValidUrl(aliceInbox)).toBe(true);
+    expect(inboxService.isValidUrl(aliceInbox)).toBe(true);
   });
 
   it("should send an Accept activity in response to a Follow activity", async () => {
@@ -58,7 +61,7 @@ describe.skip("postInbox", () => {
       statusText: "OK",
     });
 
-    await postInbox(req as Request, res as Response);
+    await inboxService.postInbox(req as Request, res as Response);
 
     expect(fetch).toHaveBeenCalledWith(
       "https://example.com/users/bob/inbox",
@@ -91,7 +94,7 @@ describe.skip("postInbox", () => {
       statusText: "OK",
     });
 
-    await postInbox(req as Request, res as Response);
+    await inboxService.postInbox(req as Request, res as Response);
     expect(consoleSpy).toHaveBeenLastCalledWith("Activity sent successfully:", 200);
 
     consoleSpy.mockRestore();
@@ -107,7 +110,7 @@ describe.skip("postInbox", () => {
       statusText: "OK",
     });
 
-    await postInbox(req as Request, res as Response);
+    await inboxService.postInbox(req as Request, res as Response);
 
     expect(httpSignature.sign).toHaveBeenCalled();
   });
@@ -128,7 +131,7 @@ describe.skip("postInbox", () => {
 
     (httpSignature.verifySignature as jest.Mock).mockReturnValue(true);
 
-    await postInbox(req as Request, res as Response);
+    await inboxService.postInbox(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });
@@ -150,7 +153,7 @@ describe.skip("postInbox", () => {
 
     (httpSignature.verifySignature as jest.Mock).mockReturnValue(true);
 
-    await postInbox(req as Request, res as Response);
+    await inboxService.postInbox(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });
@@ -176,7 +179,7 @@ describe.skip("postInbox", () => {
 
     (httpSignature.verifySignature as jest.Mock).mockReturnValue(true);
 
-    await postInbox(req as Request, res as Response);
+    await inboxService.postInbox(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });
@@ -202,7 +205,7 @@ describe.skip("postInbox", () => {
 
     (httpSignature.verifySignature as jest.Mock).mockReturnValue(true);
 
-    await postInbox(req as Request, res as Response);
+    await inboxService.postInbox(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });
@@ -212,8 +215,9 @@ describe.skip("postInbox", () => {
 describe.skip("distributeActivity", () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
+  let inboxService :InboxService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.DB_FILENAME = ":memory:";
     req = {
       params: { username: "alice" },
@@ -232,6 +236,14 @@ describe.skip("distributeActivity", () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
+
+    const dbPromise = open({
+      filename: ':memory:',
+      driver: Database
+    });
+    const db = new DbService(await dbPromise);
+
+    inboxService = new InboxService(db);
   });
 
   it("should distribute activity to followers with matching visibility", async () => {
@@ -251,7 +263,7 @@ describe.skip("distributeActivity", () => {
       statusText: "OK",
     });
 
-    await distributeActivity(req as Request, res as Response);
+    await inboxService.distributeActivity(req as Request, res as Response);
 
     expect(fetch).toHaveBeenCalledWith(
       "https://example.com/users/bob/inbox",
@@ -285,7 +297,7 @@ describe.skip("distributeActivity", () => {
       statusText: "Internal Server Error",
     });
 
-    await distributeActivity(req as Request, res as Response);
+    await inboxService.distributeActivity(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });
@@ -295,8 +307,9 @@ describe.skip("distributeActivity", () => {
 describe("notifyFollowers", () => {
   let req: Partial<Request>;
   let res: Partial<Response>;
+  let inboxService :InboxService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.DB_FILENAME = ":memory:";
     req = {
       params: { username: "alice" },
@@ -315,6 +328,13 @@ describe("notifyFollowers", () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
+    const dbPromise = open({
+      filename: ':memory:',
+      driver: Database
+    });
+    const db = new DbService(await dbPromise);
+
+    inboxService = new InboxService(db);
   });
 
   it.skip("should notify followers of new activity", async () => {
@@ -334,7 +354,7 @@ describe("notifyFollowers", () => {
       statusText: "OK",
     });
 
-    await distributeActivity(req as Request, res as Response);
+    await inboxService.distributeActivity(req as Request, res as Response);
 
     expect(fetch).toHaveBeenCalledWith(
       "https://example.com/users/bob/inbox",
@@ -368,7 +388,7 @@ describe("notifyFollowers", () => {
       statusText: "Internal Server Error",
     });
 
-    await distributeActivity(req as Request, res as Response);
+    await inboxService.distributeActivity(req as Request, res as Response);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ status: "ok" });

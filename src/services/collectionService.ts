@@ -4,7 +4,14 @@ import { signActivity } from './utils';
 import DbService from './dbService';
 import { Database, open } from "sqlite";
 
-export const getOutbox = async (req: Request, res: Response): Promise<void> => {
+class CollectionService {
+  dbService: DbService;
+
+  constructor(dbService: DbService) {
+    this.dbService = dbService;
+  }
+
+public async getOutbox(req: Request, res: Response): Promise<void> {
   const username = req.params.username;
   const dbService = new DbService(await open({
     filename: '../activitypub.db',
@@ -28,7 +35,7 @@ export const getOutbox = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const createNote = async (req: Request, res: Response): Promise<void> => {
+public async createNote(req: Request, res: Response): Promise<void> {
   const username = req.params.username;
   const note: Note = req.body;
   const dbService = new DbService(await open({
@@ -44,23 +51,25 @@ export const createNote = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const postLike = async (req: Request, res: Response): Promise<void> => {
-  const { actor, object, id } = req.body;
-  const dbService = new DbService(await open({
-    filename: '../activitypub.db',
-    driver: Database
-  }));
+// duplicated from activityService!
 
-  try {
-    await dbService.addLikeToDB(actor, object, id);
-    res.status(201).json({ status: 'Like added' });
-  } catch (error) {
-    console.error('Error adding like to database:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
+// public async postLike(req: Request, res: Response): Promise<void> {
+//   const { actor, object, id } = req.body;
+//   const dbService = new DbService(await open({
+//     filename: '../activitypub.db',
+//     driver: Database
+//   }));
 
-export const postAnnounce = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     await dbService.addLikeToDB(actor, object, id);
+//     res.status(201).json({ status: 'Like added' });
+//   } catch (error) {
+//     console.error('Error adding like to database:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+public async postAnnounce(req: Request, res: Response): Promise<void> {
   const { actor, object, id } = req.body;
   const dbService = new DbService(await open({
     filename: '../activitypub.db',
@@ -76,7 +85,7 @@ export const postAnnounce = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-export const postUndo = async (req: Request, res: Response): Promise<void> => {
+public async postUndo(req: Request, res: Response): Promise<void> {
   const { actor, object } = req.body;
   const dbService = new DbService(await open({
     filename: '../activitypub.db',
@@ -98,3 +107,7 @@ export const postUndo = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+}
+
+export default CollectionService;
