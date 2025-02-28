@@ -4,10 +4,9 @@ import { json } from 'body-parser';
 import { getUser, getFollowers, getFollowing } from './services/userService';
 import CollectionService from './services/collectionService';
 import { getNote, createNote, updateNote, deleteNote, get_thread_context, create_reply } from './services/noteService';
-import { postInbox } from './services/inboxService';
+import InboxService from './services/inboxService';
 import { process_activity_for_notifications } from './services/notificationService';
 import ActivityService from './services/activityService';
-import { distributeActivity } from './services/inboxService';
 import DbService from './services/dbService';
 import { open, Database } from "sqlite";
 
@@ -59,11 +58,25 @@ app.get('/users/:username/outbox', activityPubHeaders, async (req: Request, res:
 app.get('/users/:username/notes/1', activityPubHeaders, getNote);
 
 app.post('/users/:username/inbox', limiter, activityPubHeaders, async (req: Request, res: Response) => {
-  await postInbox(req, res);
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
+  const inboxService = new InboxService(dbService);
+
+  await inboxService.postInbox(req, res);
   await process_activity_for_notifications(req.body);
 });
 
-app.post('/users/:username/notify', limiter, activityPubHeaders, distributeActivity);
+app.post('/users/:username/notify', limiter, activityPubHeaders, async (req: Request, res: Response) => {
+  const dbService = new DbService(await open({
+    filename: '../activitypub.db',
+    driver: Database
+  }));
+  const inboxService = new InboxService(dbService);
+
+  await inboxService.distributeActivity(req, res);
+});
 
 app.post('/users/:username/outbox', activityPubHeaders, createNote);
 
