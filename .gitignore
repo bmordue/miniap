@@ -3,3 +3,7 @@ built/
 coverage/
 activitypub.db
 linkml/
+
+# stryker temp files
+.stryker-tmp
+reports/
