@@ -18,6 +18,11 @@ class InboxService {
   }
 
   public async postActivity(url: fetch.RequestInfo, activity: Activity) {
+    if (typeof url === "string" && !this.isValidUrl(url)) {
+      console.error("Invalid URL provided to postActivity:", url);
+      return;
+    }
+
     try {
       const response = await fetch(url, {
         method: "POST",
