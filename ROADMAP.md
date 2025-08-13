@@ -44,7 +44,7 @@ While the existing roadmap is comprehensive, we should prioritize features that 
 
 - **Implement HTTP Signatures:** Proper signing of all outgoing activities is critical for security and federation. This should be the top feature priority.
 - **Implement WebFinger:** Actor discovery is a fundamental part of ActivityPub. Implementing the WebFinger protocol is essential for users to be found by other instances.
-- **Job Queue for Federation:** Sending activities to followers should be handled by a background job queue (e.g., using a simple in-memory queue for now, or a more robust solution like BullMQ later). This will prevent blocking the main request thread and handle delivery failures gracefully.
+- **Job Queue for Federation:** Sending activities to followers should be handled by a background job queue (e.g., using a simple in-memory queue for now, or a more robust solution like BullMQ later). _Note: In-memory queues are not suitable for production, as jobs will be lost on application restart. For production deployments, use a persistent queue solution (such as BullMQ with Redis or another durable queue system) to ensure reliability._ This will prevent blocking the main request thread and handle delivery failures gracefully.
 
 ## 4. Improve Project Documentation
 
