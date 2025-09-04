@@ -24,8 +24,8 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@stryker-mutator/core": "^8.7.1",
-    "@stryker-mutator/jest-runner": "^8.7.1",
+    "@stryker-mutator/core": "^9.1.1",
+    "@stryker-mutator/jest-runner": "^9.1.1",
     "@types/http-signature": "^1.4.0",
     "@types/jest": "^29.5.11",
     "@types/node": "^22.8.7",
