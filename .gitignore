@@ -4,6 +4,10 @@ coverage/
 activitypub.db
 linkml/
 
+# Environment configuration
+.env
+.env.local
+
 # stryker temp files
 .stryker-tmp
 reports/
