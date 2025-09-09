@@ -126,6 +126,21 @@ class DbService {
     return result;
   }
 
+  public async getNoteByIdFromDB(noteId: string): Promise<Note | null> {
+    const result = await this.db.get(
+      "SELECT * FROM notes WHERE id = ?",
+      [noteId]
+    );
+    if (!result) {
+      return null;
+    }
+    result["@context"] = "https://www.w3.org/ns/activitystreams";
+    result.type = "Note";
+    result.to = JSON.parse(result.toActor);
+    delete result.toActor;
+    return result;
+  }
+
   public async addFollowerToDB(
     username: string,
     follower: string

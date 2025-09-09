@@ -136,16 +136,15 @@ export const get_thread_context = async (post_id: string): Promise<any> => {
   });
   const dbService = new DbService(db);
 
-  const post = await dbService.getNoteFromDB(post_id);
+  const post = await dbService.getNoteByIdFromDB(post_id);
   if (!post) {
     return;
   }
   const root_id = post.id || post_id;
 
-  const thread_posts = await db.run(`
-    SELECT * FROM posts 
-    WHERE root_post_id = ? 
-    ORDER BY thread_depth, created_at
+  const thread_posts = await db.all(`
+    SELECT * FROM notes
+    WHERE id = ?
   `, root_id);
 
   const thread_tree = {}; // build_thread_tree(thread_posts);

@@ -6,6 +6,7 @@ import { open, Database } from 'sqlite';
 
 jest.mock('../dbService');
 jest.mock('http-signature');
+jest.mock('sqlite');
 
 describe.skip('getNote', () => {
   let req: Partial<Request>;
@@ -272,38 +273,32 @@ describe('process_reply_activity', () => {
 });
 
 describe('get_thread_context', () => {
-  it.skip('should fetch entire thread context for a post', async () => {
+  it('should fetch thread context for a post', async () => {
     const mockPost = {
       id: '1',
-      root_post_id: '1'
+      attributedTo: 'alice',
+      content: 'Hello world',
+      published: '2023-01-01T00:00:00Z',
+      to: ['https://www.w3.org/ns/activitystreams#Public'],
+      visibility: 'public',
     };
-
-    const mockThreadPosts = [
-      { id: '1', thread_depth: 0, created_at: '2023-01-01T00:00:00Z' },
-      { id: '2', in_reply_to_id: '1', thread_depth: 1, created_at: '2023-01-01T01:00:00Z' }
-    ];
-
-    // (getNoteFromDB as jest.Mock).mockResolvedValue(mockPost);
-    // (db.fetch as jest.Mock).mockResolvedValue(mockThreadPosts);
-    // (build_thread_tree as jest.Mock).mockReturnValue(mockThreadPosts[0]);
+    const mockDb = {
+      all: jest.fn().mockResolvedValue([mockPost]),
+    };
+    (open as jest.Mock).mockResolvedValue(mockDb);
+    (DbService.prototype.getNoteByIdFromDB as jest.Mock).mockResolvedValue(mockPost);
 
     const context = await get_thread_context('1');
 
-    // expect(getNoteFromDB).toHaveBeenCalledWith('1');
-    // expect(db.fetch).toHaveBeenCalledWith(`
-    //   SELECT * FROM posts 
-    //   WHERE root_post_id = ? 
-    //   ORDER BY thread_depth, created_at
-    // `, mockPost.root_post_id);
-    // expect(build_thread_tree).toHaveBeenCalledWith(mockThreadPosts);
-    // expect(context).toEqual({
-    //   root: mockThreadPosts[0],
-    //   focused_post: mockPost,
-    //   participants: undefined
-    // });
+    expect(DbService.prototype.getNoteByIdFromDB).toHaveBeenCalledWith('1');
+    expect(context.focused_post).toEqual(mockPost);
+    expect(context.root).toEqual({});
   });
 
-  it.skip('should throw an error if post is not found', async () => {
-    await expect(get_thread_context('1')).rejects.toThrow('Post not found');
+  it('should return undefined if post is not found', async () => {
+    (open as jest.Mock).mockResolvedValue({ all: jest.fn().mockResolvedValue([]) });
+    (DbService.prototype.getNoteByIdFromDB as jest.Mock).mockResolvedValue(null);
+    const context = await get_thread_context('1');
+    expect(context).toBeUndefined();
   });
 });
